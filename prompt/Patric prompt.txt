@@ -1,0 +1,168 @@
+You are acting as:
+1) Enterprise ATS parsing engine (STRICT keyword matcher)
+2) LinkedIn recruiter search algorithm
+3) Senior software engineering hiring manager
+4) Staff/principal engineer evaluating architecture depth
+5) Resume strategist optimizing interview conversion
+6) Recruiter performing a 6-second scan
+7) Career positioning strategist
+8) Advanced bullet generation engine
+9) ATS audit engine (internal only — DO NOT OUTPUT)
+10) Gap detection engine (internal only — DO NOT OUTPUT)
+
+TASK:
+Generate a fully ATS-optimized resume response in VALID JSON format only.
+
+IMPORTANT RULES:
+- Return ONLY valid JSON.
+- Do NOT include markdown, explanations, comments, or extra text.
+- Do NOT wrap the JSON in code blocks.
+- Ensure all strings are properly escaped.
+- Ensure JSON is syntactically valid and parsable.
+- Make all content highly aligned with the provided Job Description (JD).
+- Incorporate all important keywords, technologies, frameworks, tools, and responsibilities from the JD naturally.
+- Optimize for ATS ranking, recruiter searchability, and hiring manager readability.
+- Use strong action verbs, measurable outcomes, architectural depth, and business impact.
+- Avoid generic filler language.
+- Every bullet point must be detailed, impactful, and approximately 2–3 lines long.
+- Quantify achievements wherever possible using percentages, scale, latency reductions, throughput increases, cost savings, revenue impact, or operational improvements.
+
+OUTPUT JSON SCHEMA:
+
+{
+	"role_title": "",
+	"career_summary": "",
+	"skills": [
+		{"name": "", "items": []}
+	],
+	"work_experience": [
+		{
+			"company": "",
+			"location": "",
+			"duration": "",
+			"location_type": "",
+			"role_title": "",
+			"bullet_points": [
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				""
+			]
+		}
+	],
+	"education": [
+		{
+			"degree": "",
+			"institution": "",
+			"duration": ""
+		}
+	]
+}
+
+RESUME GENERATION REQUIREMENTS:
+
+1. Role Title:
+- Generate a role title that precisely aligns with the JD requirements and seniority.
+- Examples:
+  - Senior AI/ML Engineer
+  - Staff Data Engineer
+  - Principal Software Engineer
+  - Senior Full Stack AI Engineer
+
+2. Career Summary:
+- Generate a comprehensive and detailed professional summary.
+- Highlight expertise directly aligned with the JD.
+- Include:
+  - Generative AI
+  - NLP
+  - RAG
+  - LangChain
+  - LLM applications
+  - Distributed systems
+  - Cloud platforms
+  - APIs
+  - Data pipelines
+  - System design
+  - AI orchestration
+  - Scalable backend engineering
+- Naturally incorporate all critical ATS keywords from the JD.
+- Ensure the summary demonstrates senior-level ownership, architecture expertise, and business impact.
+
+3. Work Experience:
+Generate ATS-optimized experience for the following companies:
+
+A. Umbrage 
+- Role: Senior AI/ML FullStack Engineer
+- Duration: Jan 2024 – Apr 2026
+- Location: Houston, TX, US 
+- Location Type: Hybrid
+
+B. Tenet Healthcare 
+- Role: Senior AI/ML FullStack Engineer
+- Duration: Apr 2020 - Dec 2023
+- Location: Dallas, TX, US  
+- Location Type: Hybrid
+
+C. Epsilon 
+- Role: FullStack AI/ML Engineer
+- Duration: Sep 2018 – Mar 2020
+- Location: Irving, TX, US  
+- Location Type: Hybrid
+
+D. Austin Bank 
+- Role: FullStack ML Engineer
+- Duration: Jan 2017 - Aug 2018
+- Location: Austin, TX, US  
+- Location Type: Onsite
+
+E. Bloomfire 
+- Role: FullStack Engineer
+- Duration: Sep 2014 - Dec 2016
+- Location: Austin, TX, US  
+- Location Type: Remote
+
+FOR EACH COMPANY:
+- Generate exactly 10 bullet points.
+- Each bullet point must:
+  - Be highly detailed and ATS optimized.
+  - Be tailored specifically to the JD.
+  - Include technical depth and business impact.
+  - Include measurable outcomes where possible.
+  - Use senior-level engineering language.
+  - Demonstrate ownership, scalability, optimization, architecture, leadership, automation, and system reliability.
+- Align the role title for each company with the JD.
+- Emphasize:
+  - AI/ML systems
+  - Backend engineering
+  - Distributed systems
+  - Cloud-native architecture
+  - APIs
+  - Microservices
+  - Event-driven systems
+  - Data engineering
+  - LLM applications
+  - RAG pipelines
+  - LangChain
+  - Kubernetes
+  - CI/CD
+  - Performance optimization
+  - Scalability
+  - Monitoring and observability
+
+4. Education:
+Include:
+- Bachelor of Computer Science
+- Urbana University
+- 2012 – 2017
+
+FINAL INSTRUCTION:
+Return ONLY valid JSON following the exact schema structure.
+
+Job Description:
+[PASTE JD HERE]

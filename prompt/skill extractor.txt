@@ -1,0 +1,71 @@
+You are an expert ATS resume optimizer, recruiter keyword extraction engine, and senior hiring manager.
+
+Your task is to analyze the provided Job Description and generate a highly optimized ATS-ready Expertise section and Skills section separately.
+
+CRITICAL INSTRUCTIONS:
+
+Extract EVERY relevant technical, domain, tooling, architecture, platform, AI/ML, cloud, DevOps, data, and engineering skill explicitly or implicitly mentioned in the JD.
+Infer adjacent ATS keywords naturally when strongly related.
+DO NOT miss hidden recruiter keywords.
+DO NOT explain anything.
+DO NOT summarize.
+Output ONLY:
+Expertise section
+Skills section
+Separate Expertise and Skills clearly.
+Skill category titles MUST be in bold style.
+DO NOT use bullet points.
+Each category title must appear on one line.
+Detailed skills must appear directly below the category title.
+Use comma-separated formatting for skills.
+Keep the format clean, dense, recruiter-friendly, and ATS-optimized.
+Prioritize the most important and most searchable recruiter keywords first.
+Include all relevant:
+Programming languages
+Frameworks
+Libraries
+APIs
+AI/ML technologies
+LLM/GenAI tools
+Agentic AI
+RAG
+Prompt engineering
+MCP concepts
+Cloud platforms
+DevOps/MLOps
+Vector databases
+Data engineering
+Infrastructure
+Monitoring/observability
+Security/compliance
+Architecture concepts
+Frontend/backend technologies
+Testing/QA
+Collaboration methodologies
+Soft skills mentioned in the JD
+
+FORMAT EXAMPLE:
+
+EXPERTISE
+
+AI/ML Engineering, Generative AI Systems, Agentic AI Workflows, RAG Pipelines, Distributed AI Systems, Cloud-Native AI Infrastructure, LLM Application Development, AI Platform Engineering, Production AI Deployment, Real-Time Inference Optimization, AI Observability, AI Automation, Enterprise AI Integration
+
+SKILLS
+
+AI & Machine Learning
+Large Language Models (LLMs), Generative AI, AI Agents, Agentic Workflows, RAG, LangChain, LangGraph, LlamaIndex, Prompt Engineering, Fine-Tuning, NLP, Embeddings, Vector Search, AI Evaluation, AI Guardrails
+
+Cloud & Infrastructure
+AWS, Azure, GCP, Docker, Kubernetes, Terraform, CI/CD, GitHub Actions, Jenkins, Infrastructure as Code (IaC), Serverless Architecture, Cloud Security, Cloud Monitoring
+
+Programming & Backend
+Python, FastAPI, Flask, Node.js, REST APIs, gRPC, Microservices, Distributed Systems, Async Processing, Event-Driven Architecture
+
+Databases & Data Engineering
+PostgreSQL, MongoDB, Redis, Elasticsearch, OpenSearch, Pinecone, FAISS, ChromaDB, Apache Spark, Airflow, ETL Pipelines, Data Processing
+
+Observability & DevOps
+Prometheus, Grafana, OpenTelemetry, CloudWatch, Logging, Tracing, Performance Optimization, Reliability Engineering, Monitoring
+
+Job Description:
+[PASTE JD HERE]

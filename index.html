@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resume Builder</title>
+    <link rel="icon" href="icon.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div
+      id="toastHost"
+      class="toast-host"
+      aria-live="polite"
+      aria-relevant="additions"
+    ></div>
+
+    <div
+      id="gptResultModal"
+      class="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="gptResultModalTitle"
+      hidden
+    >
+      <div
+        class="modal-dialog gpt-result-dialog"
+        role="document"
+        tabindex="-1"
+      >
+        <div class="gpt-result-dialog-header">
+          <h2 id="gptResultModalTitle" class="gpt-result-dialog-title">
+            ChatGPT reply
+          </h2>
+          <div class="gpt-result-dialog-header-actions">
+            <button
+              id="gptResultModalFetchBtn"
+              type="button"
+              class="btn-icon gpt-result-modal-fetch"
+              title="Get result again from ChatGPT"
+              aria-label="Get result again from ChatGPT"
+            ></button>
+            <button
+              id="gptResultModalDownloadBtn"
+              type="button"
+              class="btn-icon gpt-result-modal-download"
+              title="Download Word"
+              aria-label="Download Word"
+              disabled
+            ></button>
+            <button
+              id="gptResultModalClose"
+              type="button"
+              class="modal-icon-close"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <p id="gptResultModalStatus" class="gpt-result-status">
+          Waiting for ChatGPT…
+        </p>
+        <div
+          id="gptResultModalWxWrap"
+          class="gpt-result-wx-wrap"
+          hidden
+        >
+          <h3 class="gpt-result-wx-heading">Word-style job lines</h3>
+          <p class="gpt-result-wx-hint">
+            Same as the .docx template: each job is
+            <code>company | location (location_type) | role_title | duration</code>, then bullets.
+          </p>
+          <div
+            id="gptResultModalWxWordPreview"
+            class="gpt-result-wx-word-preview"
+            aria-label="Job header lines as in Word"
+          ></div>
+          <h3 class="gpt-result-wx-heading gpt-result-wx-heading--json">work_experience (JSON)</h3>
+          <pre
+            id="gptResultModalWorkExperience"
+            class="gpt-result-work-experience"
+            spellcheck="false"
+          ></pre>
+        </div>
+        <label for="gptResultModalBody" class="sr-only">Response text</label>
+        <textarea
+          id="gptResultModalBody"
+          class="gpt-result-body"
+          readonly
+          rows="14"
+          spellcheck="false"
+          placeholder="Response will appear here…"
+        ></textarea>
+        <div class="gpt-result-dialog-actions">
+          <button
+            id="gptResultModalDownloadWord"
+            type="button"
+            class="btn-secondary"
+            disabled
+            hidden
+          >
+            Download resume as Word
+          </button>
+          <button id="gptResultModalCopy" type="button" class="btn-teal" disabled>
+            Copy reply
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="usersManageModal"
+      class="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="usersManageModalTitle"
+      hidden
+    >
+      <div class="modal-dialog users-manage-dialog" role="document" tabindex="-1">
+        <div class="gpt-result-dialog-header">
+          <h2 id="usersManageModalTitle" class="gpt-result-dialog-title">
+            Manage users
+          </h2>
+          <button
+            id="usersManageModalClose"
+            type="button"
+            class="modal-icon-close"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div id="usersManageModalBody" class="users-manage-body"></div>
+      </div>
+    </div>
+
+    <div
+      id="docxPreviewModal"
+      class="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="docxPreviewModalTitle"
+      hidden
+    >
+      <div class="modal-dialog docx-preview-dialog" role="document" tabindex="-1">
+        <div class="gpt-result-dialog-header">
+          <h2 id="docxPreviewModalTitle" class="gpt-result-dialog-title">
+            Document preview
+          </h2>
+          <button
+            id="docxPreviewModalClose"
+            type="button"
+            class="modal-icon-close"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div
+          id="docxPreviewModalBody"
+          class="docx-preview-modal-body docx-resume-preview-body"
+          aria-label="Document preview"
+        ></div>
+      </div>
+    </div>
+
+    <div
+      id="windowSettingsModal"
+      class="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="windowSettingsModalTitle"
+      hidden
+    >
+      <div class="modal-dialog window-settings-dialog" role="document" tabindex="-1">
+        <div class="gpt-result-dialog-header">
+          <h2 id="windowSettingsModalTitle" class="gpt-result-dialog-title">
+            Window settings
+          </h2>
+          <button
+            id="windowSettingsModalClose"
+            type="button"
+            class="modal-icon-close"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div class="window-settings-body">
+          <p class="window-settings-hint" id="windowSettingsHint">
+            Choose a header color for this window.
+          </p>
+          <div
+            id="dedicatedHeaderColorGrid"
+            class="dedicated-header-color-grid"
+            role="listbox"
+            aria-label="New window header color"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="addPromptModal"
+      class="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="addPromptModalTitle"
+      hidden
+    >
+      <div class="gpt-result-dialog add-prompt-dialog" role="document" tabindex="-1">
+        <div class="gpt-result-dialog-header">
+          <h2 id="addPromptModalTitle" class="gpt-result-dialog-title">Add prompt</h2>
+          <button
+            id="addPromptModalClose"
+            type="button"
+            class="modal-icon-close"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <form id="addPromptForm" class="add-prompt-form">
+          <div class="add-prompt-field">
+            <label for="addPromptLabel">Name</label>
+            <input
+              id="addPromptLabel"
+              type="text"
+              class="add-prompt-input"
+              required
+              autocomplete="off"
+              placeholder="e.g. Acme Corp"
+            />
+          </div>
+          <div class="add-prompt-field">
+            <label for="addPromptPathDisplay">Prompt file (.txt)</label>
+            <div class="add-prompt-path-row">
+              <input
+                id="addPromptPathDisplay"
+                type="text"
+                class="add-prompt-input"
+                readonly
+                placeholder="Browse to choose…"
+              />
+              <button
+                id="addPromptBrowseTxtBtn"
+                type="button"
+                class="btn-secondary"
+              >
+                Browse…
+              </button>
+            </div>
+          </div>
+          <div class="add-prompt-field">
+            <label for="addPromptStructureDisplay">Word structure (.docx)</label>
+            <div class="add-prompt-path-row">
+              <input
+                id="addPromptStructureDisplay"
+                type="text"
+                class="add-prompt-input"
+                readonly
+                placeholder="Browse to choose…"
+              />
+              <button
+                id="addPromptBrowseDocxBtn"
+                type="button"
+                class="btn-secondary"
+              >
+                Browse…
+              </button>
+            </div>
+          </div>
+          <input id="addPromptPathHidden" type="hidden" value="" />
+          <input id="addPromptStructureHidden" type="hidden" value="" />
+          <input id="addPromptEditId" type="hidden" value="" />
+          <div class="add-prompt-form-actions">
+            <button
+              id="addPromptDeleteBtn"
+              type="button"
+              class="btn-secondary btn-danger"
+              hidden
+            >
+              Delete prompt
+            </button>
+            <button
+              id="addPromptCancelBtn"
+              type="button"
+              class="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button id="addPromptSaveBtn" type="submit" class="btn-teal">
+              Save prompt
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <main class="container">
+      <header class="titlebar" aria-label="Window">
+        <div
+          class="titlebar-drag"
+          title="Drag here to move the window. Drag to the top edge of the screen to maximize (snap). Double-click to maximize or restore."
+        >
+          <img
+            class="titlebar-icon"
+            src="icon.png"
+            width="18"
+            height="18"
+            alt=""
+          />
+          <span class="titlebar-brand">
+            <span class="titlebar-title">Resume Builder</span>
+            <span class="titlebar-version" id="appVersionLabel" aria-label="App version"></span>
+          </span>
+        </div>
+        <div class="titlebar-right">
+          <button
+            id="openWindowSettingsBtn"
+            type="button"
+            class="titlebar-btn titlebar-btn-settings"
+            title="Window settings"
+            aria-label="Window settings"
+          >
+            <svg
+              class="titlebar-btn-icon"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+              />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+
+          <button
+            id="togglePromptPanelBtn"
+            type="button"
+            class="titlebar-btn titlebar-btn-panel"
+            aria-pressed="false"
+            title="Hide ChatGPT panel"
+            aria-label="Hide ChatGPT panel"
+          >
+            <svg
+              class="titlebar-btn-icon"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="8" height="16" rx="1" />
+              <rect x="13" y="4" width="8" height="16" rx="1" opacity="0.45" />
+            </svg>
+          </button>
+
+          <button
+            id="alwaysOnTopBtn"
+            type="button"
+            class="titlebar-btn titlebar-btn-pin"
+            aria-pressed="false"
+            title="Always on top"
+            aria-label="Always on top"
+          >
+            <svg
+              class="titlebar-btn-icon pin-icon-svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a2 2 0 1 0-4 0v3.76Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+
+          <button
+            id="winMinBtn"
+            type="button"
+            class="titlebar-btn titlebar-btn-caption"
+            aria-label="Minimize"
+            title="Minimize"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+              <path d="M0 5h10" stroke="currentColor" stroke-width="1.2" />
+            </svg>
+          </button>
+          <button
+            id="winMaxBtn"
+            type="button"
+            class="titlebar-btn titlebar-btn-caption"
+            aria-label="Maximize"
+            title="Maximize"
+          >
+            <svg
+              class="win-max-icon"
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              aria-hidden="true"
+            >
+              <rect
+                x="0.6"
+                y="0.6"
+                width="8.8"
+                height="8.8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+              />
+            </svg>
+            <svg
+              class="win-restore-icon"
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              aria-hidden="true"
+              hidden
+            >
+              <path
+                d="M3 2.5h5.5v5.5H3zM2.5 4.5H7V9H2.5z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+              />
+            </svg>
+          </button>
+          <button
+            id="winCloseBtn"
+            type="button"
+            class="titlebar-btn titlebar-btn-caption titlebar-btn-close"
+            aria-label="Close"
+            title="Close"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+              <path
+                d="M1 1l8 8M9 1L1 9"
+                stroke="currentColor"
+                stroke-width="1.2"
+              />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace-browser-split" id="workspaceBrowserSplit">
+        <div class="workspace-left" id="workspaceLeft">
+          <div class="workspace-tabs">
+            <div
+              id="tabsListMain"
+              class="tabs-list tabs-list--main"
+              role="tablist"
+              aria-label="Workspace"
+            >
+              <span
+                id="tabBuild"
+                role="tab"
+                class="tab tab-active"
+                aria-selected="true"
+                aria-controls="pageBuild"
+                tabindex="0"
+                data-page="build"
+                >Build</span
+              >
+            </div>
+            <div
+              id="tabsListDedicated"
+              class="tabs-list tabs-list--dedicated"
+              role="tablist"
+              aria-label="Workspace"
+              hidden
+            >
+              <span
+                id="tabDedicatedPrompt"
+                role="tab"
+                class="tab tab-chrome tab-active"
+                aria-selected="true"
+                aria-controls="pageBuild"
+                aria-label="Prompt"
+                title="Prompt"
+                tabindex="0"
+                data-page="prompt"
+                ><span class="tab-chrome-icon" aria-hidden="true"
+                  ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span
+                ></span
+              >
+              <div
+                id="dedicatedBrowserTabStrip"
+                class="dedicated-browser-tab-strip"
+                role="presentation"
+              ></div>
+              <button
+                type="button"
+                id="dedicatedAddBrowserTabBtn"
+                class="tab-add-browser"
+                title="New browser tab"
+                aria-label="New browser tab"
+                hidden
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <div class="workspace-pages">
+      <div
+        id="pageBuild"
+        class="page build-page"
+        role="tabpanel"
+        aria-labelledby="tabBuild"
+        aria-hidden="false"
+      >
+        <div class="build-layout">
+          <section
+            class="panel build-section build-top-row"
+            aria-label="Job description"
+          >
+            <div class="build-top-inputs">
+              <div class="build-input-group">
+                <label for="jdInput">
+                  <span class="build-label-compact">JD</span>
+                  <span class="build-label-full">Job description (JD)</span>
+                </label>
+                <div class="build-input-shell is-empty">
+                  <textarea
+                    id="jdInput"
+                    class="build-input-textarea"
+                  ></textarea>
+                  <span class="build-input-check" aria-hidden="true">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                </div>
+                <div
+                  id="dedicatedJdToolbar"
+                  class="dedicated-jd-toolbar chatgpt-pane-toolbar"
+                  aria-label="ChatGPT actions"
+                  hidden
+                ></div>
+              </div>
+              <div class="build-input-group build-input-group--company">
+                <label for="mainCompanyInput">
+                  <span class="build-label-compact">Company</span>
+                  <span class="build-label-full">Company name</span>
+                </label>
+                <div class="build-input-shell is-empty">
+                  <input
+                    type="text"
+                    id="mainCompanyInput"
+                    class="build-input-textarea main-company-input"
+                    autocomplete="organization"
+                  />
+                  <span class="build-input-check" aria-hidden="true">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              
+            </div>
+          </section>
+
+          <section
+            id="dedicatedCompanySection"
+            class="panel build-section dedicated-company-section"
+            aria-label="Save settings"
+            hidden
+          >
+            <div class="build-input-group">
+              <label for="dedicatedCompanyInput">
+                <span class="build-label-full">Company name</span>
+              </label>
+              <div class="build-input-shell is-empty">
+                <input
+                  type="text"
+                  id="dedicatedCompanyInput"
+                  class="build-input-textarea dedicated-company-input"
+                  autocomplete="organization"
+                />
+              </div>
+            </div>
+          </section>
+
+          <div class="build-content-split">
+            <section
+              class="panel build-section build-prompts-column"
+              aria-labelledby="prompts-heading"
+            >
+              <div class="build-right-header">
+                <div class="build-right-header-title-row">
+                  <h2 id="prompts-heading" class="build-section-title">Users</h2>
+                  <button
+                    id="openUsersManageBtn"
+                    type="button"
+                    class="btn-icon-manage"
+                    title="Manage users"
+                    aria-label="Manage users"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+                      />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+                <button
+                  id="reloadBuildBtn"
+                  type="button"
+                  class="btn-icon-reload"
+                  title="Reload templates from disk"
+                  aria-label="Reload templates from disk"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    <polyline points="21 3 21 9 15 9" />
+                  </svg>
+                </button>
+              </div>
+
+              <div class="prompt-rows prompt-rows--build">
+                <div id="buildPromptCards"></div>
+              </div>
+            </section>
+
+            <section
+              class="panel build-section build-preview-column"
+              aria-label="Preview and actions"
+            >
+              <div id="buildPreviewBlock" class="build-preview-block" aria-label="Preview">
+                <h2 class="preview-heading">Preview</h2>
+                <p id="previewMeta" class="preview-meta"></p>
+                <div class="preview-output-shell">
+                  <textarea
+                    id="previewOutput"
+                    class="preview-output"
+                    readonly
+                    spellcheck="false"
+                    placeholder="Filled prompt appears here…"
+                  ></textarea>
+                  <button
+                    id="copyPreviewBtn"
+                    type="button"
+                    class="preview-copy-btn preview-copy-control preview-copy-only"
+                    title="Copy preview"
+                    aria-label="Copy preview"
+                    disabled
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      />
+                      <path
+                        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div id="mainPromptDirsPanel" class="build-preview-dirs main-prompt-dirs">
+                  <div class="main-prompt-word-dir prompt-word-dir-panel">
+                    <label for="mainPromptWordDirInput">Resume Download Directory</label>
+                    <div class="prompt-word-dir-row">
+                      <input
+                        type="text"
+                        id="mainPromptWordDirInput"
+                        class="prompt-word-dir-input"
+                        readonly
+                        placeholder="Folder for selected prompt…"
+                      />
+                      <button
+                        type="button"
+                        id="mainPromptWordDirPickBtn"
+                        class="btn-secondary edit-btn-icon word-dir-set-btn"
+                        title="Set resume download directory"
+                        aria-label="Set resume download directory"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="main-prompt-structure prompt-word-dir-panel">
+                    <label for="mainPromptStructureDisplay">Word skeleton directory</label>
+                    <div class="prompt-word-dir-row">
+                      <input
+                        type="text"
+                        id="mainPromptStructureDisplay"
+                        class="prompt-word-dir-input"
+                        readonly
+                        placeholder="Browse to choose skeleton…"
+                      />
+                      <button
+                        type="button"
+                        id="mainPromptStructureBrowseBtn"
+                        class="btn-secondary edit-btn-icon"
+                        title="Choose Word skeleton template"
+                        aria-label="Choose Word skeleton template"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  id="dedicatedPromptDirsPanel"
+                  class="build-preview-dirs dedicated-preview-dirs"
+                  hidden
+                >
+                  <div class="prompt-word-dir-panel">
+                    <label for="dedicatedWordDirInput">Resume Download Directory</label>
+                    <div class="prompt-word-dir-row">
+                      <input
+                        type="text"
+                        id="dedicatedWordDirInput"
+                        class="prompt-word-dir-input"
+                        readonly
+                        placeholder="Folder for this prompt…"
+                      />
+                      <button
+                        type="button"
+                        id="dedicatedWordDirPickBtn"
+                        class="btn-secondary edit-btn-icon word-dir-set-btn"
+                        title="Set resume download directory"
+                        aria-label="Set resume download directory"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="prompt-word-dir-panel">
+                    <label for="dedicatedPromptStructureDisplay">Word skeleton directory</label>
+                    <div class="prompt-word-dir-row">
+                      <input
+                        type="text"
+                        id="dedicatedPromptStructureDisplay"
+                        class="prompt-word-dir-input"
+                        readonly
+                        placeholder="Browse to choose skeleton…"
+                      />
+                      <button
+                        type="button"
+                        id="dedicatedPromptStructureBrowseBtn"
+                        class="btn-secondary edit-btn-icon"
+                        title="Choose Word skeleton template"
+                        aria-label="Choose Word skeleton template"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  id="dedicatedJdDownloadStatusHost"
+                  class="dedicated-jd-download-status-host"
+                  hidden
+                  aria-live="polite"
+                ></div>
+                <div class="build-preview-actions">
+                  <button
+                    id="copyPreviewBelowBtn"
+                    type="button"
+                    class="btn-teal btn-block preview-copy-below preview-copy-control preview-copy-only"
+                    title="Copy preview"
+                    aria-label="Copy preview"
+                    disabled
+                  >
+                    Copy preview
+                  </button>
+                  <button
+                    id="inputGptBtn"
+                    type="button"
+                    class="btn-block input-gpt-btn"
+                    title="Insert preview into ChatGPT, wait if uploading, then Enter to send"
+                    aria-label="Insert preview into ChatGPT, wait if uploading, then Enter to send"
+                    disabled
+                  >
+                    Input GPT
+                  </button>
+                  <button
+                    id="fetchGptResultAgainBtn"
+                    type="button"
+                    class="btn-secondary btn-block fetch-gpt-result-btn"
+                    title="Read the latest assistant reply from ChatGPT in this pane"
+                    aria-label="Get result again from ChatGPT"
+                  >
+                    Get result again
+                  </button>
+                  <div
+                    id="gptResultReadyBar"
+                    class="gpt-result-ready-bar"
+                    hidden
+                    aria-live="polite"
+                  >
+                    <p id="gptResultReadyLabel" class="gpt-result-ready-label"></p>
+                    <div class="gpt-result-ready-actions">
+                      <button
+                        id="viewGptResultBtn"
+                        type="button"
+                        class="btn-secondary btn-block"
+                      >
+                        View result
+                      </button>
+                      <button
+                        id="downloadGptResultBtn"
+                        type="button"
+                        class="btn-teal btn-block"
+                      >
+                        Download Word
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <div id="editPanelHost" class="edit-panel-host" hidden aria-hidden="true">
+          <div id="editLayoutSlot" class="edit-layout-slot">
+          <div class="edit-layout">
+            <nav class="edit-nav" role="tablist" aria-label="Users">
+              <h3 class="edit-nav-title">Users</h3>
+              <p id="editNavEmptyHint" class="edit-nav-empty-hint" hidden>
+                No users yet. Add one to set up prompts, folders, and ChatGPT.
+              </p>
+              <div id="editCustomPromptNav" class="edit-custom-prompt-nav" hidden></div>
+              <button
+                id="addPromptNavBtn"
+                type="button"
+                class="edit-file-btn edit-file-btn--add"
+              >
+                <span class="edit-file-label">+ Add user</span>
+              </button>
+            </nav>
+
+            <div class="edit-editor-panel">
+              <div
+                id="editPromptSettings"
+                class="edit-prompt-settings"
+                hidden
+                aria-label="Prompt save settings"
+              >
+                <div
+                  id="editPromptUserNameField"
+                  class="edit-prompt-settings-field"
+                >
+                  <label for="editPromptUserNameInput">User name</label>
+                  <input
+                    type="text"
+                    id="editPromptUserNameInput"
+                    class="edit-prompt-settings-input"
+                    placeholder="e.g. Oluwaseun Adeniji"
+                    autocomplete="name"
+                  />
+                  <p class="edit-prompt-settings-hint">
+                    Shown in Users list and used on downloaded .docx file names.
+                  </p>
+                </div>
+                <div class="edit-prompt-settings-field">
+                  <label for="editPromptPathDisplay">Prompt file (.txt)</label>
+                  <div class="edit-prompt-structure-row">
+                    <input
+                      type="text"
+                      id="editPromptPathDisplay"
+                      class="edit-prompt-settings-input"
+                      readonly
+                      placeholder="Browse to choose prompt file…"
+                    />
+                    <button
+                      type="button"
+                      id="editPromptPathBrowseBtn"
+                      class="btn-secondary edit-btn-icon"
+                      title="Choose prompt file"
+                      aria-label="Choose prompt file"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M2 10h20"/></svg>
+                    </button>
+                  </div>
+                  <p class="edit-prompt-settings-hint">
+                    Text used on the Build tab and in ChatGPT for this user.
+                  </p>
+                </div>
+                <div class="edit-prompt-settings-field">
+                  <label for="editPromptWordDirInput">Resume Download Directory</label>
+                  <div class="edit-prompt-structure-row">
+                    <input
+                      type="text"
+                      id="editPromptWordDirInput"
+                      class="edit-prompt-settings-input"
+                      readonly
+                      placeholder="Choose download folder…"
+                    />
+                    <button
+                      type="button"
+                      id="editPromptWordDirPickBtn"
+                      class="btn-secondary edit-btn-icon word-dir-set-btn"
+                      title="Set resume download directory"
+                      aria-label="Set resume download directory"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="edit-prompt-settings-field">
+                  <label for="editPromptStructureDisplay">Word skeleton directory</label>
+                  <div class="edit-prompt-structure-row">
+                    <input
+                      type="text"
+                      id="editPromptStructureDisplay"
+                      class="edit-prompt-settings-input"
+                      readonly
+                      placeholder="Browse to choose skeleton…"
+                    />
+                    <button
+                      type="button"
+                      id="editPromptStructureBrowseBtn"
+                      class="btn-secondary edit-btn-icon"
+                      title="Choose Word skeleton template"
+                      aria-label="Choose Word skeleton template"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="edit-prompt-settings-field">
+                  <label for="editPromptPopupHotkeyDisplay">Popup window hotkey</label>
+                  <div class="edit-prompt-structure-row">
+                    <input
+                      type="text"
+                      id="editPromptPopupHotkeyDisplay"
+                      class="edit-prompt-settings-input edit-prompt-hotkey-display"
+                      readonly
+                      placeholder="Not set"
+                    />
+                    <button
+                      type="button"
+                      id="editPromptPopupHotkeySetBtn"
+                      class="btn-secondary"
+                      title="Record a keyboard shortcut"
+                    >
+                      Set
+                    </button>
+                    <button
+                      type="button"
+                      id="editPromptPopupHotkeyClearBtn"
+                      class="btn-secondary edit-btn-icon"
+                      title="Clear hotkey"
+                      aria-label="Clear hotkey"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  </div>
+                  <p class="edit-prompt-settings-hint">
+                    Opens or focuses this user’s window. Shortcuts work in the background (e.g. Alt+Z). If that window is already open, the hotkey brings it to the front instead of opening another.
+                  </p>
+                </div>
+                <div
+                  id="editPromptDeleteField"
+                  class="edit-prompt-settings-field edit-prompt-delete-field"
+                  hidden
+                >
+                  <button
+                    type="button"
+                    id="editPromptDeleteBtn"
+                    class="btn-secondary btn-danger"
+                  >
+                    Delete this user
+                  </button>
+                  <p class="edit-prompt-settings-hint">
+                    Removes this user from the app. Your prompt and Word files on disk are not deleted.
+                  </p>
+                </div>
+              </div>
+              <div class="edit-file-url-row">
+                <label for="editFileUrlInput" class="edit-file-url-label"
+                  >File path or URL</label
+                >
+                <div class="edit-file-url-controls">
+                  <input
+                    id="editFileUrlInput"
+                    type="text"
+                    class="edit-file-url-input"
+                    spellcheck="false"
+                    placeholder="file:///… or C:\path\to\prompt.txt"
+                    autocomplete="off"
+                  />
+                  <button
+                    id="editFileBrowseBtn"
+                    type="button"
+                    class="btn-secondary edit-btn-icon edit-file-url-btn"
+                    title="Browse for file"
+                    aria-label="Browse for file"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M2 10h20"/></svg>
+                  </button>
+                  <button
+                    id="editFileLoadBtn"
+                    type="button"
+                    class="btn-secondary edit-btn-icon edit-file-url-btn"
+                    title="Load file"
+                    aria-label="Load file"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="edit-editor-header">
+                <h3 id="editPanelTitle" class="panel-title">
+                  <code>olu prompt.txt</code>
+                </h3>
+                <div class="actions wrap">
+                  <button
+                    id="editReloadBtn"
+                    type="button"
+                    class="btn-secondary edit-btn-icon"
+                    title="Reload from disk"
+                    aria-label="Reload from disk"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
+                  </button>
+                  <button
+                    id="editSaveBtn"
+                    type="button"
+                    class="btn-teal edit-btn-icon"
+                    title="Save to disk"
+                    aria-label="Save to disk"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  </button>
+                </div>
+              </div>
+              <label for="editTemplate" class="sr-only">Prompt template</label>
+              <textarea
+                id="editTemplate"
+                class="edit-template-area"
+                spellcheck="false"
+              ></textarea>
+            </div>
+          </div>
+          </div>
+      </div>
+
+      <div
+        id="pageBrowser"
+        class="page browser-page page-hidden"
+        role="tabpanel"
+        aria-labelledby="dedicatedBrowserTabStrip"
+        aria-hidden="true"
+        hidden
+      >
+        <div class="dedicated-browser-layout">
+          <aside
+            id="dedicatedBrowserSide"
+            class="dedicated-browser-side panel"
+            aria-label="Job description and GPT"
+          >
+            <div
+              id="dedicatedBrowserSideInner"
+              class="dedicated-browser-side-inner"
+            ></div>
+          </aside>
+          <div
+            id="dedicatedBrowserSplitResizer"
+            class="workspace-split-resizer dedicated-browser-split-resizer"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize job description and browser panels"
+            tabindex="0"
+          ></div>
+          <div class="dedicated-browser-main">
+            <div id="dedicatedBrowserPages" class="dedicated-browser-pages"></div>
+          </div>
+        </div>
+      </div>
+          </div>
+        </div>
+
+        <div
+          id="workspaceSplitResizer"
+          class="workspace-split-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize prompt and ChatGPT panels"
+          tabindex="0"
+        ></div>
+
+        <aside class="workspace-browser-panel" id="workspaceBrowserPanel" aria-label="ChatGPT">
+          <div class="workspace-browser-header">
+            <div class="workspace-browser-header-top">
+              <span class="workspace-browser-title">ChatGPT</span>
+            </div>
+          </div>
+          <div id="chatgptPanesHost" class="chatgpt-dual" aria-live="polite"></div>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      try {
+        var pre =
+          typeof window.pbPaths !== "undefined" &&
+          window.pbPaths &&
+          window.pbPaths.chatgptWebviewZoomPreload;
+        document.querySelectorAll("#chatgptPanesHost .chatgpt-webview").forEach(function (wv) {
+          if (pre) wv.setAttribute("preload", pre);
+          if (!wv.getAttribute("src")) wv.setAttribute("src", "https://chatgpt.com/");
+        });
+      } catch (_e) {
+        /* ignore — renderer.js will still load */
+      }
+    </script>
+    <script src="node_modules/jszip/dist/jszip.min.js"></script>
+    <script src="node_modules/docx-preview/dist/docx-preview.min.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>

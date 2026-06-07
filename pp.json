@@ -1,0 +1,224 @@
+{
+    "role_title": "Software Engineer, AI/ML Infrastructure",
+    "career_summary": "Results-driven Software Engineer specializing in AI/ML Infrastructure, Generative AI platforms, scalable backend engineering, and distributed systems with extensive experience designing production-grade AI applications and cloud-native infrastructure. Proven expertise building and scaling GenAI-powered platforms, LLM orchestration systems, Retrieval-Augmented Generation (RAG) pipelines, AI evaluation frameworks, and ML infrastructure leveraging Python, Go, Kubernetes, Docker, LangChain, vector databases, and AWS cloud services. Strong background in backend services, event-driven microservices, API development, orchestration tooling, CI/CD automation, model serving infrastructure, feature engineering pipelines, and observability platforms supporting high-scale enterprise applications. Experienced collaborating with applied scientists, product engineering teams, and platform organizations to operationalize AI/ML workloads, improve inference reliability, optimize latency, and accelerate deployment velocity for mission-critical systems. Demonstrated success driving architecture modernization, improving scalability, reducing infrastructure costs, and implementing resilient AI infrastructure frameworks supporting millions of transactions and users. Adept at designing high-performance systems using PostgreSQL, DynamoDB, Redis, Kafka, gRPC, REST APIs, and cloud-native technologies while maintaining strong software engineering fundamentals in algorithms, system design, reliability engineering, and infrastructure automation.",
+    "skills": [
+        {
+            "name": "Programming Languages",
+            "items": [
+                "Python",
+                "Go",
+                "Java",
+                "JavaScript",
+                "TypeScript",
+                "SQL",
+                "Bash"
+            ]
+        },
+        {
+            "name": "AI/ML & Generative AI",
+            "items": [
+                "Generative AI",
+                "Large Language Models",
+                "LLM Applications",
+                "Prompt Engineering",
+                "RAG Pipelines",
+                "LangChain",
+                "AI Orchestration",
+                "Vector Databases",
+                "Embeddings",
+                "Model Serving",
+                "Inference Optimization",
+                "AI Evaluation Frameworks",
+                "ML Infrastructure",
+                "Feature Engineering",
+                "NLP",
+                "Machine Learning",
+                "Deep Learning",
+                "AI Tooling",
+                "OpenAI APIs",
+                "LLMOps"
+            ]
+        },
+        {
+            "name": "Backend & Distributed Systems",
+            "items": [
+                "Distributed Systems",
+                "Microservices",
+                "Event-Driven Architecture",
+                "REST APIs",
+                "GraphQL",
+                "gRPC",
+                "High-Performance APIs",
+                "Backend Services",
+                "Scalable Systems",
+                "System Design",
+                "Concurrency",
+                "Asynchronous Processing",
+                "Service Discovery",
+                "API Gateways",
+                "Caching",
+                "Load Balancing"
+            ]
+        },
+        {
+            "name": "Cloud & Infrastructure",
+            "items": [
+                "AWS",
+                "EC2",
+                "EKS",
+                "Lambda",
+                "S3",
+                "CloudWatch",
+                "IAM",
+                "DynamoDB",
+                "RDS",
+                "Kubernetes",
+                "Docker",
+                "Terraform",
+                "Helm",
+                "Infrastructure as Code",
+                "Cloud-Native Architecture",
+                "Container Orchestration",
+                "Serverless Computing"
+            ]
+        },
+        {
+            "name": "Data Engineering & Storage",
+            "items": [
+                "PostgreSQL",
+                "MySQL",
+                "MongoDB",
+                "Redis",
+                "DynamoDB",
+                "Kafka",
+                "RabbitMQ",
+                "Vector Search",
+                "Data Pipelines",
+                "ETL Pipelines",
+                "Streaming Systems",
+                "Data Workflows",
+                "Feature Stores",
+                "Data Modeling"
+            ]
+        },
+        {
+            "name": "DevOps & Observability",
+            "items": [
+                "CI/CD",
+                "GitHub Actions",
+                "Jenkins",
+                "ArgoCD",
+                "Prometheus",
+                "Grafana",
+                "Datadog",
+                "ELK Stack",
+                "Monitoring",
+                "Observability",
+                "Tracing",
+                "Logging",
+                "Performance Optimization",
+                "Reliability Engineering",
+                "Incident Response"
+            ]
+        },
+        {
+            "name": "Software Engineering",
+            "items": [
+                "Data Structures",
+                "Algorithms",
+                "Software Design",
+                "System Architecture",
+                "Scalability",
+                "Performance Tuning",
+                "Technical Leadership",
+                "Cross-Functional Collaboration",
+                "Agile Development",
+                "Code Reviews",
+                "Test Automation",
+                "Unit Testing",
+                "Integration Testing"
+            ]
+        }
+    ],
+    "work_experience": [
+        {
+            "company": "Eagleanalytix",
+            "duration": "Feb 2023 – Apr 2026",
+            "location_type": "Remote",
+            "role_title": "Senior AI/ML Infrastructure Engineer",
+            "bullet_points": [
+                "Architected and deployed scalable AI/ML infrastructure platforms supporting GenAI-powered applications across distributed cloud environments, enabling engineering teams to accelerate model deployment velocity by 45% while improving production system reliability to 99.95% uptime.",
+                "Built enterprise-grade Retrieval-Augmented Generation (RAG) pipelines using LangChain, vector databases, embeddings, and LLM orchestration frameworks, reducing hallucination rates by 38% and improving AI response relevance across customer-facing workflows.",
+                "Developed high-performance backend services in Python and Go for model serving, inference orchestration, and AI execution infrastructure, processing over 12 million API requests daily with sub-150ms latency under peak traffic loads.",
+                "Led Kubernetes-based infrastructure modernization initiatives leveraging Docker, Helm, Terraform, and GitHub Actions, reducing infrastructure provisioning time by 70% and enabling automated multi-region deployments across AWS environments.",
+                "Implemented event-driven microservices architectures utilizing Kafka, Redis, PostgreSQL, and DynamoDB to support scalable AI workflows, improving throughput by 52% while maintaining fault-tolerant distributed system operations.",
+                "Designed AI evaluation and observability tooling integrating Prometheus, Grafana, Datadog, and custom telemetry pipelines, enabling real-time monitoring of LLM quality metrics, inference latency, token consumption, and infrastructure health.",
+                "Collaborated with applied scientists and platform engineering teams to operationalize machine learning training pipelines, feature engineering workflows, and model experimentation systems supporting large-scale NLP and recommendation engines.",
+                "Engineered secure API gateways and orchestration services integrating OpenAI APIs, vector search infrastructure, and internal ML tooling, enabling rapid development of production-ready AI applications across multiple business domains.",
+                "Optimized cloud infrastructure utilization through autoscaling, workload balancing, caching strategies, and inference optimization techniques, reducing annual compute costs by approximately 32% while increasing system scalability.",
+                "Drove end-to-end AI infrastructure projects from architecture design through deployment and production support, mentoring junior engineers and establishing engineering standards for scalable backend development, CI/CD automation, and AI platform governance."
+            ]
+        },
+        {
+            "company": "Rippling",
+            "duration": "Apr 2021 – Jan 2023",
+            "location_type": "Hybrid",
+            "role_title": "Software Engineer, Machine Learning Infrastructure",
+            "bullet_points": [
+                "Developed scalable backend infrastructure and AI platform services supporting ML-powered automation systems across payroll, HR, and workforce management products serving millions of enterprise users.",
+                "Built distributed microservices using Go, Python, PostgreSQL, and Redis to support real-time inference pipelines and AI-driven workflows, improving platform response times by 40% under high concurrency workloads.",
+                "Designed and implemented CI/CD automation pipelines leveraging Kubernetes, Docker, Jenkins, and Terraform, reducing deployment failures by 48% while enabling continuous delivery for AI-enabled backend systems.",
+                "Collaborated with cross-functional engineering and data science teams to deploy machine learning models into production environments, improving operational efficiency and accelerating experimentation cycles by 35%.",
+                "Implemented feature engineering and data orchestration pipelines integrating Kafka, DynamoDB, and AWS cloud services, enabling scalable processing of high-volume transactional and behavioral datasets.",
+                "Built observability frameworks utilizing Prometheus, Grafana, ELK Stack, and distributed tracing to improve monitoring coverage for AI services and distributed systems, reducing incident resolution time by 55%.",
+                "Enhanced API scalability and reliability through asynchronous processing, caching optimization, and event-driven architecture patterns, supporting sustained throughput growth exceeding 3x year-over-year.",
+                "Developed internal tooling for AI workflow orchestration, model evaluation, and deployment validation, enabling engineering teams to standardize ML infrastructure operations and reduce manual configuration overhead.",
+                "Optimized relational and NoSQL database performance through schema tuning, indexing strategies, query optimization, and workload partitioning, improving data access latency by 43% across mission-critical services.",
+                "Contributed to software architecture reviews, system design initiatives, and reliability engineering efforts focused on scalability, fault tolerance, and cloud-native infrastructure best practices across distributed backend ecosystems."
+            ]
+        },
+        {
+            "company": "Gibmedia",
+            "duration": "Oct 2020 – Mar 2021",
+            "location_type": "Hybrid",
+            "role_title": "AI Platform Software Engineer",
+            "bullet_points": [
+                "Engineered backend systems and AI-enabled content processing pipelines supporting digital media automation platforms, improving content classification accuracy and workflow efficiency across large-scale publishing operations.",
+                "Developed RESTful APIs and microservices using Python, FastAPI, PostgreSQL, and Docker to support scalable content ingestion, NLP processing, and recommendation engine integrations.",
+                "Built early-stage Generative AI and NLP experimentation frameworks leveraging transformer-based models, embeddings, and vector similarity search to improve automated content discovery and personalization capabilities.",
+                "Implemented cloud-native deployment pipelines using AWS, Kubernetes, and GitHub Actions, reducing release cycles by 50% while improving infrastructure consistency and deployment reliability.",
+                "Created asynchronous event-processing services using Kafka and Redis queues to support high-throughput media processing workflows, enabling near real-time content enrichment and metadata extraction.",
+                "Optimized backend application performance through caching strategies, query optimization, and API response tuning, reducing average request latency from 450ms to under 180ms.",
+                "Collaborated closely with product managers and engineering stakeholders to translate ambiguous business requirements into scalable technical solutions supporting AI-driven customer experiences.",
+                "Developed monitoring and alerting solutions using Grafana and centralized logging systems to improve operational visibility, proactively identify bottlenecks, and reduce production incident frequency.",
+                "Implemented secure authentication, authorization, and API governance standards across distributed backend services, strengthening platform security posture and improving compliance readiness.",
+                "Participated in architectural planning and infrastructure scalability initiatives focused on distributed systems reliability, backend maintainability, and extensible AI platform capabilities supporting rapid business growth."
+            ]
+        },
+        {
+            "company": "Fairmont",
+            "duration": "Mar 2018 – Sep 2020",
+            "location_type": "Onsite",
+            "role_title": "Software Engineer",
+            "bullet_points": [
+                "Designed and developed scalable backend applications supporting enterprise hospitality operations, reservation systems, and customer engagement platforms utilizing Java, Python, SQL, and RESTful service architectures.",
+                "Built distributed service integrations connecting internal business systems, third-party APIs, and cloud-based platforms, improving operational data synchronization accuracy and reducing manual processing overhead by 60%.",
+                "Implemented microservices-based backend components leveraging Docker and cloud-native deployment practices, enabling improved scalability, maintainability, and faster application delivery cycles.",
+                "Developed ETL pipelines and data processing workflows supporting business intelligence, analytics, and customer insights initiatives using PostgreSQL, MySQL, and AWS data services.",
+                "Optimized application performance through database indexing, query optimization, asynchronous processing, and caching implementations, improving system responsiveness during peak seasonal demand periods.",
+                "Collaborated with infrastructure and DevOps teams to automate CI/CD processes using Jenkins and infrastructure scripting, reducing deployment effort and minimizing production release downtime.",
+                "Enhanced system reliability and monitoring through implementation of centralized logging, observability tooling, and proactive alerting mechanisms, improving issue detection and incident response efficiency.",
+                "Worked closely with cross-functional stakeholders to gather requirements, design scalable technical solutions, and deliver customer-facing enhancements aligned with evolving business priorities.",
+                "Developed secure API integrations and backend workflows supporting mobile applications, customer portals, and operational management systems while maintaining high standards for data integrity and security.",
+                "Contributed to software design reviews, code quality initiatives, and Agile development processes while strengthening expertise in distributed systems, backend engineering, cloud infrastructure, and scalable software architecture."
+            ]
+        }
+    ],
+    "education": [
+        {
+            "degree": "Bachelor of Computer Science",
+            "institution": "Urbana University",
+            "duration": "2012 – 2017"
+        }
+    ]
+}
