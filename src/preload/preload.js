@@ -18,7 +18,11 @@ contextBridge.exposeInMainWorld("pbPaths", {
 });
 
 contextBridge.exposeInMainWorld("promptApi", {
+  gptDebugLog: (msg) => ipcRenderer.invoke("gpt-debug-log", String(msg)),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  readPrompt: (relPath) => ipcRenderer.invoke("read-prompt", relPath),
+  savePrompt: (relPath, content) =>
+    ipcRenderer.invoke("save-prompt", relPath, content),
   pickPromptFile: () => ipcRenderer.invoke("pick-prompt-file"),
   pickStructureDocx: () => ipcRenderer.invoke("pick-structure-docx"),
   getCustomPrompts: () => ipcRenderer.invoke("get-custom-prompts"),
@@ -75,26 +79,6 @@ contextBridge.exposeInMainWorld("promptApi", {
     }),
   syncPromptPopupHotkeys: (payload) =>
     ipcRenderer.invoke("sync-prompt-popup-hotkeys", payload),
-  listProfiles: () => ipcRenderer.invoke("list-profiles"),
-  getProfileJobContext: (profileId) =>
-    ipcRenderer.invoke("get-profile-job-context", profileId),
-  setProfileJobContext: (payload) =>
-    ipcRenderer.invoke("set-profile-job-context", payload),
-  onJobContextUpdated: (fn) => {
-    ipcRenderer.on("job-context-updated", (_event, payload) => {
-      fn(payload);
-    });
-  },
-  notifyRendererReady: () => ipcRenderer.invoke("notify-renderer-ready"),
-  logResumeBuild: (message) =>
-    ipcRenderer.invoke("resume-build-log", message),
-  completeResumeBuild: (payload) =>
-    ipcRenderer.invoke("complete-resume-build", payload),
-  onApiResumeBuild: (fn) => {
-    ipcRenderer.on("api-resume-build", (_event, payload) => {
-      fn(payload);
-    });
-  },
   onWindowPromptKind: (fn) => {
     ipcRenderer.on("window-prompt-kind", (_event, kind) => {
       fn(kind);

@@ -2,7 +2,7 @@
   "name": "resume-builder",
   "version": "4.2.1",
   "description": "Resume Builder — build tailored resumes with ChatGPT and Word export.",
-  "main": "main.js",
+  "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
     "bump": "node scripts/bump-version.cjs",

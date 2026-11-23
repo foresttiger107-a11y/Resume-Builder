@@ -1,6 +1,6 @@
 /**
- * One-time / dev script: writes assets/Justin Mcghee structure.docx — a Word template
- * with Docxtemplater placeholders matching the Justin McGhee layout (Calibri, margins,
+ * One-time / dev script: writes assets/resume structure.docx — a Word template
+ * with Docxtemplater placeholders matching the default resume layout (Calibri, margins,
  * section headers, `{#work_experience}` + `exp_algo` line, `{#skillBlocks}` (bold `{header}`, normal `{detail}`), etc.
  */
 "use strict";
@@ -22,7 +22,7 @@ const {
 async function main() {
   const outDir = path.join(__dirname, "..", "assets");
   fs.mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, "Justin Mcghee structure.docx");
+  const outPath = path.join(outDir, "resume structure.docx");
 
   const children = [
     new Paragraph({

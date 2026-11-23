@@ -1,6 +1,6 @@
 /**
  * Parses plain-text / markdown-ish GPT resume output and builds a .docx matching
- * the "Justin McGhee" style: name (caps), role, contact row, rule, sections,
+ * the default style: name (caps), role, contact row, rule, sections,
  * experience rows with right-aligned dates and bullets.
  */
 
@@ -19,9 +19,9 @@ const {
 } = require("docx");
 const {
   formatWorkExperienceLocationLine,
-} = require("./resume-json-to-justin.js");
+} = require("./resume-json-to-fields.js");
 
-const BULLET_REF = "justin-resume-bullets";
+const BULLET_REF = "resume-bullets";
 
 function stripMd(s) {
   return String(s || "")
@@ -542,7 +542,7 @@ function parseExperienceJobs(lines) {
 /**
  * @param {string} plain
  */
-function parsePlainResumeToJustinFields(plain) {
+function parsePlainResumeToFields(plain) {
   const lines = String(plain || "")
     .replace(/\r\n/g, "\n")
     .split("\n");
@@ -757,7 +757,7 @@ function stripInlineMdBold(s) {
   return t.replace(/\*\*/g, "");
 }
 
-/** Thin rule under a section title (matches Justin structure.docx). */
+/** Thin rule under a section title (matches resume structure.docx). */
 function sectionTitleRuleParagraph() {
   return new Paragraph({
     spacing: { after: 120 },
@@ -773,7 +773,7 @@ function sectionTitleRuleParagraph() {
   });
 }
 
-/** Rule after each job block (matches Justin structure.docx). */
+/** Rule after each job block (matches resume structure.docx). */
 function jobBlockDividerParagraph() {
   return new Paragraph({
     spacing: { before: 48, after: 72 },
@@ -943,12 +943,12 @@ function appendFormattedSkillDetail(children, detailRaw, opts) {
 }
 
 /**
- * Build programmatic Justin-style .docx from an already-parsed resume object
- * (same shape as returned by parsePlainResumeToJustinFields).
+ * Build programmatic default-style .docx from an already-parsed resume object
+ * (same shape as returned by parsePlainResumeToFields).
  * @param {object} p
  * @returns {Promise<Buffer>}
  */
-async function buildJustinTemplateResumeDocxBufferParsed(p) {
+async function buildDefaultResumeDocxBufferParsed(p) {
   const numbering = bulletNumbering();
 
   /** @type {import("docx").Paragraph[]} */
@@ -1115,15 +1115,15 @@ async function buildJustinTemplateResumeDocxBufferParsed(p) {
  * @param {string} plain extracted resume plain text
  * @returns {Promise<Buffer>}
  */
-async function buildJustinTemplateResumeDocxBuffer(plain) {
-  const p = parsePlainResumeToJustinFields(plain);
-  return buildJustinTemplateResumeDocxBufferParsed(p);
+async function buildDefaultResumeDocxBuffer(plain) {
+  const p = parsePlainResumeToFields(plain);
+  return buildDefaultResumeDocxBufferParsed(p);
 }
 
 module.exports = {
-  parsePlainResumeToJustinFields,
-  buildJustinTemplateResumeDocxBuffer,
-  buildJustinTemplateResumeDocxBufferParsed,
+  parsePlainResumeToFields,
+  buildDefaultResumeDocxBuffer,
+  buildDefaultResumeDocxBufferParsed,
   stripMd,
   stripInlineMdBold,
 };

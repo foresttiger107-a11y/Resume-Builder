@@ -1,6 +1,6 @@
 /**
- * GPT resume JSON (see resume_structure.json) → same parsed shape as
- * parsePlainResumeToJustinFields for Justin McGhee .docx (template + programmatic).
+ * GPT resume JSON (resume_structure format) → same parsed shape as
+ * parsePlainResumeToFields for resume .docx (template + programmatic).
  */
 
 /**
@@ -229,7 +229,7 @@ function splitExperienceLineForWord(experienceLineLeft) {
 }
 
 /**
- * Rows for UI / previews: same segments as the Justin Word template job line.
+ * Rows for UI / previews: same segments as the default Word template job line.
  * @param {unknown} wx
  * @returns {{ line_role: string; header_regular_suffix: string; experience_line_left: string; duration: string }[]}
  */
@@ -318,10 +318,10 @@ function stripOneBulletLine(line) {
 }
 
 /**
- * Map resume_structure.json object to parsePlainResumeToJustinFields output.
+ * Map resume_structure JSON object to parsePlainResumeToFields output.
  * @param {object} obj
  */
-function resumeJsonObjectToJustinFields(obj) {
+function resumeJsonObjectToFields(obj) {
   const nameRaw = str(
     /** @type {Record<string, unknown>} */ (obj).full_name ??
       /** @type {Record<string, unknown>} */ (obj).fullName ??
@@ -462,17 +462,15 @@ function parseResumeStructureJson(text) {
   return /** @type {object} */ (o);
 }
 
-const JUSTIN_MCGHEE_DOCX_NAME = "Justin Mcghee";
-const OLUWASEUN_ADENIJI_DOCX_NAME = "Oluwaseun Adeniji";
-
 /**
  * @param {string} personName
  * @param {object | null | undefined} obj
  * @returns {string}
  */
 function suggestResumeDocxFileStem(personName, obj) {
+  const name = String(personName || "").trim();
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
-    return `${personName} - Resume`;
+    return name ? `${name} - Resume` : "Resume";
   }
   const rec = /** @type {Record<string, unknown>} */ (obj);
   const role = String(rec.role_title ?? rec.role ?? rec.roleTitle ?? "")
@@ -480,39 +478,40 @@ function suggestResumeDocxFileStem(personName, obj) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 120);
-  if (role) {
-    return `${personName} - ${role}`;
+  if (name && role) {
+    return `${name} - ${role}`;
   }
-  return `${personName} - Resume`;
+  return name ? `${name} - Resume` : role || "Resume";
 }
 
 /**
- * Default save-as filename stem: "Justin Mcghee - {role_title}".
- * @param {object | null | undefined} obj resume_structure JSON
- * @returns {string} filename stem without .docx
- */
-function suggestJustinMcgheeDocxFileStem(obj) {
-  return suggestResumeDocxFileStem(JUSTIN_MCGHEE_DOCX_NAME, obj);
-}
-
-/**
- * Default save-as filename stem: "Oluwaseun Adeniji - {role_title}".
- * @param {object | null | undefined} obj resume_structure JSON
- * @returns {string} filename stem without .docx
- */
-function suggestOluwaseunAdenijiDocxFileStem(obj) {
-  return suggestResumeDocxFileStem(OLUWASEUN_ADENIJI_DOCX_NAME, obj);
-}
-
-/**
- * @param {"justin" | "olu"} profile
+ * Person name from resume_structure JSON (full_name), sanitized for filenames.
  * @param {object | null | undefined} obj
  * @returns {string}
  */
-function suggestResumeDocxFileStemForProfile(profile, obj) {
-  return profile === "olu"
-    ? suggestOluwaseunAdenijiDocxFileStem(obj)
-    : suggestJustinMcgheeDocxFileStem(obj);
+function resumePersonNameFromJson(obj) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+    return "";
+  }
+  const rec = /** @type {Record<string, unknown>} */ (obj);
+  return String(rec.full_name ?? rec.fullName ?? rec.name ?? "")
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+/**
+ * Default save-as filename stem: "{full_name} - {role_title}".
+ * @param {object | null | undefined} obj resume_structure JSON
+ * @param {string} [fallbackName] used when the JSON has no full_name
+ * @returns {string} filename stem without .docx
+ */
+function suggestResumeDocxFileStemFromJson(obj, fallbackName = "") {
+  return suggestResumeDocxFileStem(
+    resumePersonNameFromJson(obj) || String(fallbackName || "").trim(),
+    obj,
+  );
 }
 
 module.exports = {
@@ -520,7 +519,7 @@ module.exports = {
   isCompleteResumeStructureJsonForExport,
   extractResumeJsonObjectFromGptText,
   parseResumeStructureJson,
-  resumeJsonObjectToJustinFields,
+  resumeJsonObjectToFields,
   normalizeBulletLines,
   buildWorkExperienceHeaderLeft,
   buildWorkExperienceWordPreviewRows,
@@ -528,9 +527,7 @@ module.exports = {
   getWorkExperienceGeo,
   formatWorkExperiencePlace,
   formatWorkExperienceLocationLine,
-  suggestJustinMcgheeDocxFileStem,
-  suggestOluwaseunAdenijiDocxFileStem,
-  suggestResumeDocxFileStemForProfile,
-  OLUWASEUN_ADENIJI_DOCX_NAME,
-  JUSTIN_MCGHEE_DOCX_NAME,
+  suggestResumeDocxFileStem,
+  suggestResumeDocxFileStemFromJson,
+  resumePersonNameFromJson,
 };

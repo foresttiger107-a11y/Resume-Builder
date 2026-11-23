@@ -1,6 +1,6 @@
 /**
- * Fills "Justin Mcghee structure.docx" via Docxtemplater (Word styles come from the template).
- * Resolution order: project root, assets/, assets/templates/ (bundled default).
+ * Fills "resume structure.docx" via Docxtemplater (Word styles come from the template).
+ * Resolution order: project root, then assets/ (bundled default).
  */
 
 const fs = require("fs");
@@ -8,18 +8,18 @@ const path = require("path");
 const PizZip = require("pizzip");
 const Docxtemplater = require("docxtemplater");
 const {
-  parsePlainResumeToJustinFields,
+  parsePlainResumeToFields,
   stripMd,
   stripInlineMdBold,
-} = require("./resume-justin-docx.js");
+} = require("./resume-docx.js");
 const {
   extractResumeJsonObjectFromGptText,
   parseResumeStructureJson,
-  resumeJsonObjectToJustinFields,
+  resumeJsonObjectToFields,
   looksLikeResumeStructure,
   formatWorkExperiencePlace,
   formatWorkExperienceLocationLine,
-} = require("./resume-json-to-justin.js");
+} = require("./resume-json-to-fields.js");
 
 /**
  * Human-readable message from docxtemplater (often throws "Multi error" with details in .properties.errors).
@@ -62,25 +62,17 @@ function formatDocxtemplaterError(err) {
   return `Word template: ${parts.join(" — ")}`;
 }
 
-/** @type {Record<"justin" | "olu", string[]>} */
-const RESUME_TEMPLATE_FILENAMES = {
-  justin: ["Justin Mcghee structure.docx"],
-  olu: ["Oluwaseun Adeniji structure.docx", "Justin Mcghee structure.docx"],
-};
+/** Bundled default structure template filename(s). */
+const RESUME_TEMPLATE_FILENAMES = ["resume structure.docx"];
 
 /**
  * @param {string} appRoot
- * @param {"justin" | "olu"} [profile]
+ * @param {unknown} [_profile] unused; kept for call-site compatibility
  * @returns {string | null}
  */
-function findResumeStructureTemplatePath(appRoot, profile = "justin") {
-  const names = RESUME_TEMPLATE_FILENAMES[profile] || RESUME_TEMPLATE_FILENAMES.justin;
-  for (const name of names) {
-    for (const dir of [
-      appRoot,
-      path.join(appRoot, "assets"),
-      path.join(appRoot, "assets", "templates"),
-    ]) {
+function findResumeStructureTemplatePath(appRoot, _profile) {
+  for (const name of RESUME_TEMPLATE_FILENAMES) {
+    for (const dir of [appRoot, path.join(appRoot, "assets")]) {
       const candidate = path.join(dir, name);
       if (fs.existsSync(candidate)) {
         return candidate;
@@ -91,8 +83,8 @@ function findResumeStructureTemplatePath(appRoot, profile = "justin") {
 }
 
 /** @param {string} appRoot */
-function findJustinStructureTemplatePath(appRoot) {
-  return findResumeStructureTemplatePath(appRoot, "justin");
+function findDefaultStructureTemplatePath(appRoot) {
+  return findResumeStructureTemplatePath(appRoot);
 }
 
 /**
@@ -292,7 +284,7 @@ function buildTemplateData(parsed) {
 
 /**
  * Build a .docx buffer from resume_structure JSON (GPT file or pasted string).
- * Uses Justin Mcghee structure.docx when present; otherwise programmatic Justin layout.
+ * Uses resume structure.docx when present; otherwise the programmatic default layout.
  * @param {string | object} jsonInput raw JSON string, GPT reply, or parsed object
  * @param {string} appRoot
  * @returns {Promise<Buffer>}
@@ -300,7 +292,7 @@ function buildTemplateData(parsed) {
 async function buildResumeFromResumeStructureJson(
   jsonInput,
   appRoot,
-  profile = "justin",
+  profile = "primary",
   templatePathOverride = null,
 ) {
   /** @type {object | null} */
@@ -317,10 +309,10 @@ async function buildResumeFromResumeStructureJson(
       "Not valid resume_structure JSON. Expected career_summary, skills, work_experience (or work_xperience), or role_title.",
     );
   }
-  const parsed = resumeJsonObjectToJustinFields(obj);
+  const parsed = resumeJsonObjectToFields(obj);
   let buf = null;
   try {
-    buf = await buildResumeFromJustinStructureDocxParsed(
+    buf = await buildResumeFromStructureDocxParsed(
       parsed,
       appRoot,
       profile,
@@ -333,22 +325,22 @@ async function buildResumeFromResumeStructureJson(
     );
   }
   if (!buf) {
-    const { buildJustinTemplateResumeDocxBufferParsed } = require("./resume-justin-docx.js");
-    buf = await buildJustinTemplateResumeDocxBufferParsed(parsed);
+    const { buildDefaultResumeDocxBufferParsed } = require("./resume-docx.js");
+    buf = await buildDefaultResumeDocxBufferParsed(parsed);
   }
   return buf;
 }
 
 /**
- * @param {object} parsed same shape as parsePlainResumeToJustinFields
+ * @param {object} parsed same shape as parsePlainResumeToFields
  * @param {string} appRoot
- * @param {"justin" | "olu"} [profile]
+ * @param {"primary" | "secondary"} [profile]
  * @returns {Promise<Buffer | null>}
  */
-async function buildResumeFromJustinStructureDocxParsed(
+async function buildResumeFromStructureDocxParsed(
   parsed,
   appRoot,
-  profile = "justin",
+  profile = "primary",
   templatePathOverride = null,
 ) {
   const override =
@@ -397,14 +389,14 @@ async function buildResumeFromJustinStructureDocxParsed(
  * @param {string} appRoot __dirname of main process
  * @returns {Promise<Buffer | null>} null if template file missing
  */
-async function buildResumeFromJustinStructureDocx(
+async function buildResumeFromStructureDocx(
   plainText,
   appRoot,
-  profile = "justin",
+  profile = "primary",
   templatePathOverride = null,
 ) {
-  const parsed = parsePlainResumeToJustinFields(plainText);
-  return buildResumeFromJustinStructureDocxParsed(
+  const parsed = parsePlainResumeToFields(plainText);
+  return buildResumeFromStructureDocxParsed(
     parsed,
     appRoot,
     profile,
@@ -413,11 +405,11 @@ async function buildResumeFromJustinStructureDocx(
 }
 
 module.exports = {
-  findJustinStructureTemplatePath,
+  findDefaultStructureTemplatePath,
   findResumeStructureTemplatePath,
   formatDocxtemplaterError,
-  buildResumeFromJustinStructureDocx,
-  buildResumeFromJustinStructureDocxParsed,
+  buildResumeFromStructureDocx,
+  buildResumeFromStructureDocxParsed,
   buildResumeFromResumeStructureJson,
   buildTemplateData,
   RESUME_TEMPLATE_FILENAMES,

@@ -17,65 +17,30 @@ const { spawn } = require("child_process");
 const fs = require("fs/promises");
 const fsSync = require("fs");
 const { fileURLToPath, pathToFileURL } = require("node:url");
-const { buildJustinTemplateResumeDocxBuffer } = require("../lib/resume-justin-docx.js");
+const { buildDefaultResumeDocxBuffer } = require("../lib/resume-docx.js");
 const {
-  buildResumeFromJustinStructureDocx,
+  buildResumeFromStructureDocx,
   buildResumeFromResumeStructureJson,
   formatDocxtemplaterError,
-} = require("../lib/resume-justin-template-docx.js");
+} = require("../lib/resume-template-docx.js");
 const {
   extractResumeJsonObjectFromGptText,
   isCompleteResumeStructureJsonForExport,
   buildWorkExperienceWordPreviewRows,
   parseResumeStructureJson,
-  resumeJsonObjectToJustinFields,
-  suggestJustinMcgheeDocxFileStem,
-  suggestResumeDocxFileStemForProfile,
-} = require("../lib/resume-json-to-justin.js");
-const {
-  listProfiles,
-  findProfile,
-  findProfileByUsername,
-  findProfileCandidatesByUsername,
-  normalizeProfileId,
-} = require("../lib/profiles.js");
-const {
-  readProfileJobContextMap,
-  mergeProfileJobContext,
-  withProfileJobContext,
-} = require("../lib/job-context-store.js");
-const { createApiServer } = require("./api-server.js");
-const {
-  markRendererReady,
-  waitForRendererReady,
-  registerResumeBuild,
-  completeResumeBuild,
-  makeResumeBuildRequestId,
-} = require("./resume-build-runner.js");
+  resumeJsonObjectToFields,
+  suggestResumeDocxFileStemFromJson,
+} = require("../lib/resume-json-to-fields.js");
 
-const appRoot = path.join(__dirname, "../..");
-const rendererDir = path.join(__dirname, "../renderer");
-const preloadPath = path.join(__dirname, "../preload/preload.js");
-
-/** @type {{ server: import("http").Server, port: number, start: () => Promise<number>, stop: () => Promise<void> } | null} */
-let apiServer = null;
+/** Project root (holds assets/ and prompt/). */
+const appRoot = path.join(__dirname, "..", "..");
+const rendererDir = path.join(__dirname, "..", "renderer");
+const preloadPath = path.join(__dirname, "..", "preload", "preload.js");
 
 /** Electron's normal user agent (a spoofed Chrome UA mismatches the real Chromium). */
 const CHROME_USER_AGENT = app.userAgentFallback;
 
-const CHATGPT_PARTITIONS = [
-  "persist:chatgpt",
-  "persist:chatgpt-oluwaseun",
-  "persist:chatgpt-justin",
-];
-
-/** HTTP proxy used only for ChatGPT webview / login sessions. */
-const CHATGPT_HTTP_PROXY = {
-  host: "45.80.96.133",
-  port: 29842,
-  username: "jfisch01",
-  password: "m4BMkZgP",
-};
+const CHATGPT_PARTITIONS = ["persist:chatgpt", "persist:chatgpt-secondary"];
 
 /** Permissions that trigger Windows passkey / security-key UI in webviews. */
 const CHATGPT_DENIED_PERMISSIONS = new Set([
@@ -132,40 +97,6 @@ function isBlockedFederatedAuthUrl(url) {
 
 const configuredChatGptPartitions = new Set();
 
-function chatgptProxyRules() {
-  return `${CHATGPT_HTTP_PROXY.host}:${CHATGPT_HTTP_PROXY.port}`;
-}
-
-/** @param {import("electron").AuthenticationInfo} authInfo */
-function isChatgptConfiguredProxy(authInfo) {
-  if (!authInfo?.isProxy) {
-    return false;
-  }
-  const host = String(authInfo.host || "").toLowerCase();
-  const port = Number(authInfo.port) || 0;
-  return (
-    host === String(CHATGPT_HTTP_PROXY.host).toLowerCase() &&
-    port === Number(CHATGPT_HTTP_PROXY.port)
-  );
-}
-
-function setupChatGptProxyAuth() {
-  if (setupChatGptProxyAuth._done) {
-    return;
-  }
-  setupChatGptProxyAuth._done = true;
-  app.on(
-    "login",
-    (event, _webContents, _details, authInfo, callback) => {
-      if (!isChatgptConfiguredProxy(authInfo)) {
-        return;
-      }
-      event.preventDefault();
-      callback(CHATGPT_HTTP_PROXY.username, CHATGPT_HTTP_PROXY.password);
-    },
-  );
-}
-
 /**
  * @param {string} partition
  */
@@ -187,20 +118,6 @@ function configureChatGptSession(partition) {
   ses.setPermissionRequestHandler((_webContents, permission, callback) => {
     callback(!CHATGPT_DENIED_PERMISSIONS.has(permission));
   });
-
-  const proxyRules = chatgptProxyRules();
-  void ses
-    .setProxy({
-      mode: "fixed_servers",
-      proxyRules,
-      proxyBypassRules: "<local>",
-    })
-    .then(() => {
-      console.log(`[chatgpt] proxy enabled for ${partition} → ${proxyRules}`);
-    })
-    .catch((err) => {
-      console.error(`[chatgpt] failed to set proxy for ${partition}`, err);
-    });
 }
 
 const CHATGPT_EMAIL_LOGIN_URL = "https://auth.openai.com/log-in";
@@ -342,10 +259,19 @@ function setupChatGptWebviewSecurity() {
   });
 }
 
-/** @param {"olu" | "justin"} profile */
+/**
+ * ChatGPT login profile: "primary" (default session) or "secondary" (separate login).
+ * @param {unknown} profile
+ * @returns {"primary" | "secondary"}
+ */
+function normalizeChatgptProfile(profile) {
+  return profile === "secondary" ? "secondary" : "primary";
+}
+
+/** @param {"primary" | "secondary"} profile */
 function chatGptPartitionForProfile(profile) {
-  if (profile === "justin") {
-    return "persist:chatgpt-justin";
+  if (normalizeChatgptProfile(profile) === "secondary") {
+    return "persist:chatgpt-secondary";
   }
   return "persist:chatgpt";
 }
@@ -355,7 +281,29 @@ app.commandLine.appendSwitch("disable-blink-features", "AutomationControlled");
 app.commandLine.appendSwitch("disable-quic");
 app.commandLine.appendSwitch("disable-http2");
 setupChatGptWebviewSecurity();
-setupChatGptProxyAuth();
+/** Bundled defaults (inside app.asar when packaged — read-only). */
+const bundledPromptDir = path.join(appRoot, "prompt");
+
+/** Ordered dirs to read factory prompts from (asar, then asar.unpacked if used). */
+function getBundledPromptDirs() {
+  const dirs = [bundledPromptDir];
+  if (app.isPackaged) {
+    dirs.push(path.join(process.resourcesPath, "app.asar.unpacked", "prompt"));
+  }
+  return dirs;
+}
+
+/**
+ * Writable prompt directory. Packaged apps cannot write inside app.asar;
+ * use userData so Save works in installed builds.
+ * @returns {string}
+ */
+function getWritablePromptDir() {
+  if (app.isPackaged) {
+    return path.join(app.getPath("userData"), "prompt");
+  }
+  return bundledPromptDir;
+}
 
 /** @returns {string} */
 function appSettingsPath() {
@@ -364,7 +312,7 @@ function appSettingsPath() {
 
 /** @param {unknown} profile */
 function normalizeResumeProfile(profile) {
-  return profile === "justin" ? "justin" : "olu";
+  return normalizeChatgptProfile(profile);
 }
 
 /** @param {unknown} arg IPC payload or profile string */
@@ -399,16 +347,10 @@ function ipcDownloadKey(arg) {
 /** @param {unknown} key */
 function normalizeDownloadKey(key) {
   const k = String(key ?? "").trim();
-  if (k === "justin") {
-    return "justin";
-  }
-  if (k === "olu" || k === "other") {
-    return "other";
-  }
   if (k.startsWith("custom:")) {
     return k;
   }
-  return k || "other";
+  return "default";
 }
 
 /**
@@ -427,9 +369,6 @@ function readDownloadDirectoriesMap(raw) {
       out[normalizeDownloadKey(key)] = path.normalize(v.trim());
     }
   }
-  if (out.olu && !out.other) {
-    out.other = out.olu;
-  }
   return out;
 }
 
@@ -440,22 +379,19 @@ function readDownloadDirectoriesMap(raw) {
 function getDownloadDirectoriesFromSettings(settings) {
   const map = readDownloadDirectoriesMap(settings.downloadDirectories);
   const legacy = String(settings.downloadDirectory || "").trim();
-  if (legacy && !map.other && !map.olu) {
-    map.other = path.normalize(legacy);
+  if (legacy && !map.default) {
+    map.default = path.normalize(legacy);
   }
   return map;
 }
 
-/**
- * @param {{ olu?: string, justin?: string }} partial
- */
 /**
  * @typedef {{
  *   id: string,
  *   label: string,
  *   promptPath: string,
  *   structurePath: string,
- *   chatgptProfile: "olu" | "justin",
+ *   chatgptProfile: "primary" | "secondary",
  * }} CustomPromptEntry
  */
 
@@ -469,7 +405,7 @@ function normalizeCustomPromptEntry(raw) {
   const label = String(rec.label || "").trim();
   const promptPath = path.normalize(String(rec.promptPath || "").trim());
   const structurePath = path.normalize(String(rec.structurePath || "").trim());
-  const chatgptProfile = rec.chatgptProfile === "justin" ? "justin" : "olu";
+  const chatgptProfile = normalizeChatgptProfile(rec.chatgptProfile);
   if (!id.startsWith("custom:") || !label || !promptPath || !structurePath) {
     return null;
   }
@@ -515,145 +451,6 @@ async function writeCustomPrompts(entries) {
     customPrompts: entries,
   };
   await fs.writeFile(appSettingsPath(), JSON.stringify(next, null, 2), "utf8");
-}
-
-/** @param {string} profileId */
-async function getProfileJobContext(profileId) {
-  const id = normalizeProfileId(profileId);
-  if (!id) {
-    return null;
-  }
-  const settings = await readAppSettings();
-  const map = readProfileJobContextMap(settings);
-  return map[id] ?? null;
-}
-
-/**
- * @param {string} profileId
- * @param {{ jd?: string, company?: string }} patch
- * @param {{ silent?: boolean }} [opts]
- */
-async function setProfileJobContext(profileId, patch, opts = {}) {
-  const id = normalizeProfileId(profileId);
-  if (!id) {
-    throw new Error("Invalid profile id.");
-  }
-  const profile = findProfile(id, await readCustomPrompts());
-  if (!profile) {
-    throw new Error("Profile not found.");
-  }
-  const settings = await readAppSettings();
-  const map = readProfileJobContextMap(settings);
-  const nextContext = mergeProfileJobContext(map[id], patch);
-  const nextSettings = withProfileJobContext(settings, id, nextContext);
-  await fs.writeFile(
-    appSettingsPath(),
-    JSON.stringify(nextSettings, null, 2),
-    "utf8",
-  );
-  if (!opts.silent) {
-    broadcastJobContextUpdated({
-      profileId: id,
-      jd: nextContext.jd,
-      company: nextContext.company,
-      updatedAt: nextContext.updatedAt,
-    });
-  }
-  return nextContext;
-}
-
-/**
- * @param {{ id: string, label: string }} profile
- * @param {{ jd?: string, company?: string }} input
- */
-async function triggerResumeBuildFromApi(profile, input = {}) {
-  const profileId = normalizeProfileId(profile.id);
-  if (!profileId) {
-    throw new Error("Invalid profile id.");
-  }
-  const jd = String(input.jd ?? "");
-  const company = String(input.company ?? "");
-
-  console.log(
-    `[resume-build] request for "${profile.label}" (${profileId}) jd=${jd.length}ch company="${company}"`,
-  );
-
-  // Store context for the build, but do not push into the open form UI.
-  await setProfileJobContext(profileId, { jd, company }, { silent: true });
-
-  const opened = focusOrOpenPromptWindow(profileId);
-  const win = opened?.win;
-  if (!win || win.isDestroyed()) {
-    throw new Error("Could not open profile build window.");
-  }
-  console.log(
-    `[resume-build] window ${opened.alreadyOpen ? "already open" : "created"} (wc=${win.webContents.id})`,
-  );
-  if (win.isMinimized()) {
-    win.restore();
-  }
-  win.show();
-  win.focus();
-
-  console.log("[resume-build] waiting for renderer ready…");
-  await waitForRendererReady(win);
-  console.log("[resume-build] renderer ready, sending build event");
-
-  const requestId = makeResumeBuildRequestId();
-  const buildPromise = registerResumeBuild(requestId);
-
-  win.webContents.send("api-resume-build", {
-    requestId,
-    profileId,
-    username: profile.label,
-    jd,
-    company,
-  });
-
-  const result = /** @type {Record<string, unknown>} */ (await buildPromise);
-  console.log("[resume-build] build completed:", JSON.stringify(result));
-  return {
-    profileId,
-    username: profile.label,
-    jd,
-    company,
-    filePath: String(result.filePath ?? ""),
-    folderPath: String(result.folderPath ?? ""),
-    jdPath: String(result.jdPath ?? ""),
-    updatedAt: String(result.updatedAt ?? new Date().toISOString()),
-  };
-}
-
-/** @param {{ profileId: string, jd: string, company: string, updatedAt: string }} payload */
-function broadcastJobContextUpdated(payload) {
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (win.isDestroyed()) {
-      continue;
-    }
-    win.webContents.send("job-context-updated", payload);
-  }
-}
-
-async function startResumeBuilderApi() {
-  if (apiServer) {
-    return apiServer.port;
-  }
-  apiServer = createApiServer({
-    version: APP_VERSION,
-    listProfiles: async () => listProfiles(await readCustomPrompts()),
-    findProfile: async (profileId) =>
-      findProfile(profileId, await readCustomPrompts()),
-    findProfileByUsername: async (username) =>
-      findProfileByUsername(username, await readCustomPrompts()),
-    findProfileCandidatesByUsername: async (username) =>
-      findProfileCandidatesByUsername(username, await readCustomPrompts()),
-    getJobContext: async (profileId) => getProfileJobContext(profileId),
-    setJobContext: async (profileId, patch) =>
-      setProfileJobContext(profileId, patch),
-    submitResumeBuild: async (profile, input) =>
-      triggerResumeBuildFromApi(profile, input),
-  });
-  return apiServer.start();
 }
 
 /** @param {string} label @param {Set<string>} usedIds */
@@ -717,9 +514,7 @@ async function getGlobalResumeSaveRoot() {
   }
   const map = getDownloadDirectoriesFromSettings(settings);
   for (const candidate of [
-    map.other,
-    map.olu,
-    map.justin,
+    map.default,
     ...Object.values(map),
   ]) {
     if (candidate) {
@@ -934,6 +729,113 @@ function createTray() {
       mainWindow.focus();
     }
   });
+}
+
+const ALLOWED_PROMPTS = new Set([
+  "prompt/skill extractor.txt",
+  "prompt/exp updator.txt",
+  "prompt/summary generator.txt",
+  "prompt/default prompt.txt",
+]);
+
+/** If the canonical file is missing/empty in the bundle, try these names (older installs). */
+const PROMPT_READ_ALIASES = {};
+
+/**
+ * @param {string} filePath
+ * @returns {Promise<string | null>}
+ */
+async function readUtf8IfNonempty(filePath) {
+  try {
+    const text = await fs.readFile(filePath, "utf8");
+    if (String(text).trim().length > 0) {
+      return text;
+    }
+  } catch (e) {
+    if (!e || typeof e !== "object" || e.code !== "ENOENT") {
+      console.warn("Resume Builder: read failed:", filePath, e);
+    }
+  }
+  return null;
+}
+
+/**
+ * @param {string} name basename under prompt/
+ * @returns {Promise<string | null>}
+ */
+async function findPromptSourceText(name) {
+  const candidates = [name, ...(PROMPT_READ_ALIASES[name] || [])];
+  const dirs = [];
+  const writable = getWritablePromptDir();
+  dirs.push(writable);
+  for (const dir of getBundledPromptDirs()) {
+    if (dir !== writable) {
+      dirs.push(dir);
+    }
+  }
+  for (const tryName of candidates) {
+    for (const dir of dirs) {
+      const text = await readUtf8IfNonempty(path.join(dir, tryName));
+      if (text) {
+        return text;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * @param {string} relPath e.g. prompt/skill extractor.txt
+ * @returns {Promise<string>}
+ */
+async function readAllowedPromptContent(relPath) {
+  let name;
+  try {
+    name = promptFileNameFromRel(relPath);
+  } catch {
+    return "";
+  }
+  const text = await findPromptSourceText(name);
+  if (!text) {
+    console.error("Resume Builder: could not read prompt anywhere:", name);
+    return "";
+  }
+  return text;
+}
+
+/** Copy bundled defaults into the writable prompt dir when missing or empty. */
+async function seedWritablePromptsIfNeeded() {
+  if (!app.isPackaged) {
+    return;
+  }
+  const destDir = getWritablePromptDir();
+  if (destDir === bundledPromptDir) {
+    return;
+  }
+  await fs.mkdir(destDir, { recursive: true });
+  for (const relPath of ALLOWED_PROMPTS) {
+    let name;
+    try {
+      name = promptFileNameFromRel(relPath);
+    } catch {
+      continue;
+    }
+    const dest = path.join(destDir, name);
+    const existing = await readUtf8IfNonempty(dest);
+    if (existing) {
+      continue;
+    }
+    const text = await findPromptSourceText(name);
+    if (!text) {
+      console.error("Resume Builder: could not seed prompt file (no bundle copy):", name);
+      continue;
+    }
+    try {
+      await fs.writeFile(dest, text, "utf8");
+    } catch (e) {
+      console.error("Resume Builder: could not seed prompt file", name, e);
+    }
+  }
 }
 
 /** @param {import("electron").BrowserWindow} win */
@@ -1358,6 +1260,20 @@ function registerPromptPopupHotkeysFromPayload(arg) {
   return { ok: true, failed, shortcutCombos, listenerCombos };
 }
 
+function promptFileNameFromRel(relPath) {
+  const normalized = String(relPath || "").replace(/\\/g, "/");
+  if (!ALLOWED_PROMPTS.has(normalized)) {
+    throw new Error("Invalid prompt path");
+  }
+  return normalized.slice("prompt/".length);
+}
+
+/** Path used for read/write of allowed prompts (writable in packaged builds). */
+function resolveAllowedPrompt(relPath) {
+  const name = promptFileNameFromRel(relPath);
+  return path.join(getWritablePromptDir(), name);
+}
+
 /** Safe Windows/macOS filename stem (no path separators or reserved chars). */
 function sanitizeDocxDefaultStem(name) {
   const s = String(name || "")
@@ -1397,12 +1313,12 @@ function todayDatePathSegment() {
  */
 function buildProfileDatedCompanySaveDir(downloadDir, profileName, companyName) {
   const root = String(downloadDir || "").trim();
-  const userSeg = sanitizeCompanyFolderSegment(profileName);
+  const profileSeg = sanitizeCompanyFolderSegment(profileName);
   const companySeg = sanitizeCompanyFolderSegment(companyName);
-  if (!root || !userSeg || !companySeg) {
+  if (!root || !profileSeg || !companySeg) {
     return null;
   }
-  return path.join(root, userSeg, todayDatePathSegment(), companySeg);
+  return path.join(root, profileSeg, todayDatePathSegment(), companySeg);
 }
 
 const GPT_DOC_SECTION_HEADERS =
@@ -1902,6 +1818,18 @@ if (!gotLock) {
 
   registerGptDownloadFolderIpc();
 
+  ipcMain.handle("read-prompt", async (_event, relPath) => {
+    return readAllowedPromptContent(relPath);
+  });
+
+  ipcMain.handle("save-prompt", async (_event, relPath, content) => {
+    const full = resolveAllowedPrompt(relPath);
+    const dir = path.dirname(full);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(full, content, "utf8");
+    return { ok: true };
+  });
+
   ipcMain.handle("pick-prompt-file", async (event) => {
     const parent = dialogParentWindow(event);
     if (!parent) {
@@ -1952,7 +1880,7 @@ if (!gotLock) {
     const label = String(rec.label || "").trim();
     const promptPath = path.normalize(String(rec.promptPath || "").trim());
     const structurePath = path.normalize(String(rec.structurePath || "").trim());
-    const chatgptProfile = rec.chatgptProfile === "justin" ? "justin" : "olu";
+    const chatgptProfile = normalizeChatgptProfile(rec.chatgptProfile);
     const existingId = String(rec.id || "").trim();
 
     if (!label) {
@@ -2146,13 +2074,25 @@ if (!gotLock) {
     return describeGptDocxExportable(raw);
   });
 
+  /* Debug trace for the send → reply → Word build flow. */
+  ipcMain.handle("gpt-debug-log", (_event, msg) => {
+    try {
+      fsSync.appendFileSync(
+        path.join(app.getPath("userData"), "gpt-debug.log"),
+        `${new Date().toISOString()} ${String(msg)}\n`,
+      );
+    } catch (_e) {
+      /* ignore */
+    }
+  });
+
   ipcMain.handle("save-gpt-docx", async (event, payload) => {
     const win = dialogParentWindow(event);
     if (!win || win.isDestroyed()) {
       return { ok: false, error: "No window" };
     }
     const raw = String(payload?.text ?? "");
-    const profile = payload?.profile === "olu" ? "olu" : "justin";
+    const profile = normalizeChatgptProfile(payload?.profile);
     const structureRaw = String(payload?.structureTemplatePath || "").trim();
     const structureTemplatePath =
       structureRaw && fsSync.existsSync(structureRaw)
@@ -2171,24 +2111,6 @@ if (!gotLock) {
       downloadKey: payload?.downloadKey,
       profile: payload?.profile,
     });
-    const personStem =
-      profile === "olu" ? "Oluwaseun Adeniji - Resume" : "Justin Mcghee - Resume";
-    const userFileStem = sanitizeDocxDefaultStem(
-      String(payload?.userFileName || "").trim(),
-    );
-    let stem = userFileStem;
-    if (!stem) {
-      stem = payload?.companyFolder
-        ? sanitizeDocxDefaultStem(payload?.defaultFileName || personStem)
-        : jsonObj
-          ? sanitizeDocxDefaultStem(suggestResumeDocxFileStemForProfile(profile, jsonObj))
-          : sanitizeDocxDefaultStem(
-              payload?.defaultFileName ||
-                (profile === "olu" ? "Oluwaseun Adeniji - Resume" : "Justin Mcghee - Resume"),
-            );
-    }
-    const defaultFileName = `${stem}.docx`;
-
     const downloadDir = await getDownloadDirectoryForKey(downloadKey);
     const companyRaw = String(payload?.companyFolder ?? "").trim();
     const companySeg = sanitizeCompanyFolderSegment(companyRaw);
@@ -2206,10 +2128,10 @@ if (!gotLock) {
         error: "Set a global resume download folder first (Settings → Browse).",
       };
     }
-    const profileNameRaw = String(payload?.userFileName || "").trim();
     const profileName =
-      sanitizeCompanyFolderSegment(profileNameRaw) ||
-      (profile === "olu" ? "Oluwaseun Adeniji" : "Justin Mcghee");
+      sanitizeCompanyFolderSegment(String(payload?.profileName ?? "").trim()) ||
+      sanitizeCompanyFolderSegment(downloadKey) ||
+      "Profile";
     const saveDir = buildProfileDatedCompanySaveDir(
       downloadDir,
       profileName,
@@ -2221,6 +2143,7 @@ if (!gotLock) {
         error: "Set a profile name and company before downloading.",
       };
     }
+    const defaultFileName = `${profileName}.docx`;
     await fs.mkdir(saveDir, { recursive: true });
 
     const profileLabel = "Resume";
@@ -2277,11 +2200,11 @@ if (!gotLock) {
           "[save-gpt-docx] JSON template failed:",
           formatDocxtemplaterError(e),
         );
-        const parsed = resumeJsonObjectToJustinFields(jsonObj);
+        const parsed = resumeJsonObjectToFields(jsonObj);
         const {
-          buildJustinTemplateResumeDocxBufferParsed,
-        } = require("../lib/resume-justin-docx.js");
-        buf = await buildJustinTemplateResumeDocxBufferParsed(parsed);
+          buildDefaultResumeDocxBufferParsed,
+        } = require("../lib/resume-docx.js");
+        buf = await buildDefaultResumeDocxBufferParsed(parsed);
       }
       if (!buf) {
         return {
@@ -2323,7 +2246,7 @@ if (!gotLock) {
 
   /**
    * For the ChatGPT reply modal: extract resume JSON (if any) and return work_experience
-   * for display. Renderer cannot require resume-json-to-justin.js (no nodeIntegration).
+   * for display. Renderer cannot require resume-json-to-fields.js (no nodeIntegration).
    */
   ipcMain.handle("resolve-work-experience-preview", (_event, raw) => {
     const obj = extractResumeJsonObjectFromGptText(String(raw ?? ""));
@@ -2379,7 +2302,7 @@ if (!gotLock) {
     const jsonObj = parseResumeStructureJson(raw);
     const stem = sanitizeDocxDefaultStem(
       jsonObj
-        ? suggestJustinMcgheeDocxFileStem(jsonObj)
+        ? suggestResumeDocxFileStemFromJson(jsonObj)
         : path.basename(jsonPath, path.extname(jsonPath)) || "Resume",
     );
     const { canceled: saveCanceled, filePath: savePath } = await dialog.showSaveDialog(win, {
@@ -2406,87 +2329,6 @@ if (!gotLock) {
   });
 
   ipcMain.handle("get-app-version", () => APP_VERSION);
-
-  ipcMain.handle("get-profile-job-context", async (_event, rawProfileId) => {
-    const profileId = normalizeProfileId(rawProfileId);
-    const profile = findProfile(profileId, await readCustomPrompts());
-    if (!profile) {
-      return { ok: false, error: "Profile not found." };
-    }
-    const context = await getProfileJobContext(profile.id);
-    return {
-      ok: true,
-      profileId: profile.id,
-      jd: context?.jd ?? "",
-      company: context?.company ?? "",
-      updatedAt: context?.updatedAt ?? null,
-    };
-  });
-
-  ipcMain.handle("set-profile-job-context", async (_event, raw) => {
-    const rec = raw && typeof raw === "object" ? raw : {};
-    const profileId = normalizeProfileId(rec.profileId ?? rec.profile);
-    if (!profileId) {
-      return { ok: false, error: "profileId is required." };
-    }
-    if (
-      !Object.prototype.hasOwnProperty.call(rec, "jd") &&
-      !Object.prototype.hasOwnProperty.call(rec, "company")
-    ) {
-      return {
-        ok: false,
-        error: "Provide at least one of: jd, company.",
-      };
-    }
-    try {
-      const context = await setProfileJobContext(profileId, {
-        jd: Object.prototype.hasOwnProperty.call(rec, "jd")
-          ? String(rec.jd ?? "")
-          : undefined,
-        company: Object.prototype.hasOwnProperty.call(rec, "company")
-          ? String(rec.company ?? "")
-          : undefined,
-      });
-      return {
-        ok: true,
-        profileId,
-        jd: context.jd,
-        company: context.company,
-        updatedAt: context.updatedAt,
-      };
-    } catch (err) {
-      return {
-        ok: false,
-        error: String(err && err.message ? err.message : err),
-      };
-    }
-  });
-
-  ipcMain.handle("list-profiles", async () => ({
-    ok: true,
-    profiles: listProfiles(await readCustomPrompts()),
-  }));
-
-  ipcMain.handle("notify-renderer-ready", (event) => {
-    markRendererReady(event.sender.id);
-    console.log(`[resume-build] renderer ready (wc=${event.sender.id})`);
-    return { ok: true };
-  });
-
-  ipcMain.handle("resume-build-log", (_event, message) => {
-    console.log(`[resume-build][renderer] ${String(message ?? "")}`);
-    return { ok: true };
-  });
-
-  ipcMain.handle("complete-resume-build", (_event, raw) => {
-    const rec = raw && typeof raw === "object" ? raw : {};
-    const requestId = String(rec.requestId ?? "").trim();
-    if (!requestId) {
-      return { ok: false, error: "requestId is required." };
-    }
-    completeResumeBuild(requestId, rec);
-    return { ok: true };
-  });
 
   ipcMain.handle("window-set-title", (event, title) => {
     const win = windowFromEvent(event);
@@ -2539,7 +2381,7 @@ if (!gotLock) {
   });
 
   ipcMain.handle("open-chatgpt-external", async (_event, profile) => {
-    const part = chatGptPartitionForProfile(profile === "justin" ? "justin" : "olu");
+    const part = chatGptPartitionForProfile(normalizeChatgptProfile(profile));
     await shell.openExternal(CHATGPT_EMAIL_LOGIN_URL);
     return { ok: true, partition: part };
   });
@@ -2549,7 +2391,7 @@ if (!gotLock) {
       payload && typeof payload.partition === "string" && payload.partition
         ? payload.partition
         : chatGptPartitionForProfile(
-            payload && payload.profile === "justin" ? "justin" : "olu",
+            normalizeChatgptProfile(payload && payload.profile),
           );
     openChatGptLoginWindow(part);
     return { ok: true, partition: part };
@@ -2560,7 +2402,7 @@ if (!gotLock) {
       payload && typeof payload.partition === "string" && payload.partition
         ? payload.partition
         : chatGptPartitionForProfile(
-            payload && payload.profile === "justin" ? "justin" : "olu",
+            normalizeChatgptProfile(payload && payload.profile),
           );
     const ses = session.fromPartition(part, { cache: true });
     await ses.clearStorageData();
@@ -2589,15 +2431,14 @@ if (!gotLock) {
     } catch (e) {
       console.error("Resume Builder: migrateLegacyDownloadSettings", e);
     }
-    setupChatGptProxyAuth();
     for (const part of CHATGPT_PARTITIONS) {
       configureChatGptSession(part);
     }
     applyLoginStartup();
     try {
-      await startResumeBuilderApi();
+      await seedWritablePromptsIfNeeded();
     } catch (e) {
-      console.error("Resume Builder: startResumeBuilderApi", e);
+      console.error("Resume Builder: seedWritablePromptsIfNeeded", e);
     }
     if (app.dock) {
       const dockImg = nativeImage.createFromPath(iconPath);
@@ -2621,10 +2462,6 @@ if (!gotLock) {
     isQuitting = true;
     unregisterAllPromptPopupHotkeys();
     stopPromptPopupGlobalKeyListener();
-    if (apiServer) {
-      void apiServer.stop().catch(() => {});
-      apiServer = null;
-    }
     if (tray) {
       tray.destroy();
       tray = null;

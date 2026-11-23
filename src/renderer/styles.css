@@ -2199,10 +2199,7 @@ body.dedicated-prompt-window .dedicated-browser-split-resizer:focus-visible {
 
 body.dedicated-prompt-window[data-prompt-window="other"]
   .prompt-rows--build
-  .prompt-card[data-prompt]:not([data-prompt="other"]),
-body.dedicated-prompt-window[data-prompt-window="justin"]
-  .prompt-rows--build
-  .prompt-card[data-prompt]:not([data-prompt="justin"]) {
+  .prompt-card[data-prompt]:not([data-prompt="other"]) {
   display: none !important;
 }
 
@@ -2527,13 +2524,13 @@ body:not(.dedicated-prompt-window) #dedicatedJdToolbar {
 
 body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar {
   display: flex !important;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   flex: 0 0 auto;
   width: 100%;
   max-width: 100%;
   margin-top: 8px;
-  padding: 4px 16px;
+  padding: 4px 0;
   gap: 8px;
   box-sizing: border-box;
 }
@@ -2543,27 +2540,21 @@ body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .
 body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .chatgpt-pane-view,
 body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .chatgpt-pane-download,
 body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .chatgpt-pane-fetch {
-  flex: 0 0 auto;
+  flex: 1 1 0;
   min-width: 0;
-  max-width: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: auto;
+  height: 32px;
   padding: 0;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .btn-icon svg,
-body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .chatgpt-pane-input-gpt svg,
-body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .chatgpt-pane-view svg,
-body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .chatgpt-pane-download svg,
-body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .chatgpt-pane-fetch svg {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  display: block;
+body.dedicated-prompt-window .dedicated-browser-side-inner #dedicatedJdToolbar .btn-icon svg {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
 }
 
 body.dedicated-prompt-window #dedicatedJdToolbar[hidden] {
@@ -3673,17 +3664,6 @@ button.preview-copy-btn:disabled {
   cursor: not-allowed;
   background: #94a3b8;
   border-color: #cbd5e1;
-}
-
-.chatgpt-pane-toolbar .btn-icon svg,
-.chatgpt-pane-input-gpt svg,
-.chatgpt-pane-view svg,
-.chatgpt-pane-download svg,
-.chatgpt-pane-fetch svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  display: block;
 }
 
 .chatgpt-pane-fetch {
@@ -5258,16 +5238,6 @@ body:not(.dedicated-prompt-window) .edit-layout {
 
 body:not(.dedicated-prompt-window) .users-manage-body .edit-layout {
   min-height: 0;
-}
-
-.build-settings-users-label {
-  display: block;
-  margin: 14px 0 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--pb-section-label);
 }
 
 .edit-layout.is-empty .edit-config-column,
