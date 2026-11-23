@@ -16,7 +16,7 @@
   "build": {
     "appId": "com.resumebuilder.app",
     "productName": "Resume Builder",
-    "icon": "icon.png",
+    "icon": "assets/icon.png",
     "files": [
       "**/*",
       "!dist/**"
@@ -26,7 +26,7 @@
     ],
     "afterPack": "./scripts/after-pack-icon.cjs",
     "win": {
-      "icon": "icon.png",
+      "icon": "assets/icon.png",
       "target": "nsis",
       "signAndEditExecutable": false
     }

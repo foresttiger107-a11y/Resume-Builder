@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Embed root `icon.png` into the Windows .exe as the application icon.
+ * Embed `assets/icon.png` into the Windows .exe as the application icon.
  * Needed when `win.signAndEditExecutable` is false (skips electron-builder's rcedit),
  * or when that step fails on some machines.
  */
@@ -13,7 +13,7 @@ module.exports = async function afterPackIcon(context) {
   const os = require("os");
 
   const projectDir = context.packager.info.projectDir;
-  const pngPath = path.join(projectDir, "icon.png");
+  const pngPath = path.join(projectDir, "assets", "icon.png");
   if (!fs.existsSync(pngPath)) {
     return;
   }

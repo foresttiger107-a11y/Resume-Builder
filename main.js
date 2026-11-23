@@ -35,9 +35,8 @@ const {
 
 const appRoot = __dirname;
 
-/** Recent Chrome UA — ChatGPT often blocks the default Electron user agent. */
-const CHROME_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+/** Electron's normal user agent (a spoofed Chrome UA mismatches the real Chromium). */
+const CHROME_USER_AGENT = app.userAgentFallback;
 
 const CHATGPT_PARTITIONS = [
   "persist:chatgpt",
@@ -54,7 +53,13 @@ const CHATGPT_DENIED_PERMISSIONS = new Set([
 ]);
 
 /** @param {string} url */
+const ALLOW_FEDERATED_SIGNIN = true;
+
 function isBlockedFederatedAuthUrl(url) {
+  // Google / Microsoft / Apple sign-in is allowed in the app (no blocking).
+  if (ALLOW_FEDERATED_SIGNIN) {
+    return false;
+  }
   if (!url || url.startsWith("about:")) {
     return false;
   }
@@ -129,12 +134,20 @@ function attachChatGptFederatedAuthBlock(contents) {
     return;
   }
   contents._pbChatgptAuthBlock = true;
-  contents.on("will-navigate", (event, url) => {
+  const redirectToEmailLogin = (event, url) => {
     if (!isBlockedFederatedAuthUrl(url)) {
       return;
     }
     event.preventDefault();
     contents.loadURL(CHATGPT_EMAIL_LOGIN_URL);
+  };
+  contents.on("will-navigate", redirectToEmailLogin);
+  contents.on("will-redirect", redirectToEmailLogin);
+  // Safety net for navigations the events above miss (JS location changes, etc.).
+  contents.on("did-start-navigation", (details) => {
+    if (details.isMainFrame && isBlockedFederatedAuthUrl(details.url)) {
+      contents.loadURL(CHATGPT_EMAIL_LOGIN_URL);
+    }
   });
 }
 
@@ -495,14 +508,57 @@ async function readAppSettings() {
 }
 
 /**
- * @param {unknown} profile
+ * @param {Record<string, unknown>} settings
  * @returns {Promise<string>}
  */
-async function getDownloadDirectoryForKey(downloadKey) {
-  const key = normalizeDownloadKey(downloadKey);
+async function getGlobalResumeSaveRoot() {
   const settings = await readAppSettings();
+  const direct = String(settings.resumeSaveRoot || "").trim();
+  if (direct) {
+    return path.normalize(direct);
+  }
   const map = getDownloadDirectoriesFromSettings(settings);
-  return map[key] || "";
+  for (const candidate of [
+    map.other,
+    map.olu,
+    map.justin,
+    ...Object.values(map),
+  ]) {
+    if (candidate) {
+      return candidate;
+    }
+  }
+  return "";
+}
+
+/**
+ * @param {string} directory
+ * @returns {Promise<{ ok: true } | { ok: false, error: string }>}
+ */
+async function setGlobalResumeSaveRoot(directory) {
+  const normalized = path.normalize(String(directory || "").trim());
+  if (!normalized) {
+    return { ok: false, error: "Folder path is empty." };
+  }
+  await writeAppSettings({ resumeSaveRoot: normalized });
+  return { ok: true };
+}
+
+/**
+ * @param {unknown} downloadKey
+ * @returns {Promise<string>}
+ */
+async function getDownloadDirectoryForKey(_downloadKey) {
+  return getGlobalResumeSaveRoot();
+}
+
+/**
+ * @param {unknown} downloadKey
+ * @param {string} directory
+ * @returns {Promise<{ ok: true } | { ok: false, error: string }>}
+ */
+async function setDownloadDirectoryForKey(_downloadKey, directory) {
+  return setGlobalResumeSaveRoot(directory);
 }
 
 /** Repair legacy / corrupted settings (e.g. downloadDirectories stored as a string). */
@@ -523,21 +579,6 @@ async function migrateLegacyDownloadSettings() {
   };
   delete next.downloadDirectory;
   await fs.writeFile(appSettingsPath(), JSON.stringify(next, null, 2), "utf8");
-}
-
-/**
- * @param {unknown} downloadKey
- * @param {string} directory
- * @returns {Promise<{ ok: true } | { ok: false, error: string }>}
- */
-async function setDownloadDirectoryForKey(downloadKey, directory) {
-  const key = normalizeDownloadKey(downloadKey);
-  const normalized = path.normalize(String(directory || "").trim());
-  if (!normalized) {
-    return { ok: false, error: "Folder path is empty." };
-  }
-  await writeDownloadDirectoriesPartial({ [key]: normalized });
-  return { ok: true };
 }
 
 /** @param {Record<string, unknown>} patch */
@@ -593,8 +634,8 @@ async function uniqueJdTxtPathInDir(dir) {
   return path.join(dir, `JD (${Date.now()}).txt`);
 }
 
-/** Absolute path to branding asset `icon.png` (taskbar, window, tray, builds). */
-const iconPath = path.resolve(appRoot, "icon.png");
+/** Absolute path to branding asset `assets/icon.png` (taskbar, window, tray, builds). */
+const iconPath = path.resolve(appRoot, "assets", "icon.png");
 
 /** @returns {import("electron").NativeImage | string} */
 function windowIconFromDisk() {
@@ -1254,7 +1295,7 @@ function sanitizeDocxDefaultStem(name) {
   return s.slice(0, 180) || "ChatGPT Reply";
 }
 
-/** Safe folder name segment for `{downloadDir}/{company}` paths. */
+/** Safe folder name segment for download path folders. */
 function sanitizeCompanyFolderSegment(name) {
   const s = String(name || "")
     .replace(/[\\/:*?"<>|]/g, " ")
@@ -1263,6 +1304,32 @@ function sanitizeCompanyFolderSegment(name) {
     .replace(/^\.+/, "")
     .slice(0, 80);
   return s;
+}
+
+/** @returns {string} YYYY-MM-DD for dated download folders */
+function todayDatePathSegment() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * `{downloadDir}/{profileName}/{date}/{company}`
+ * @param {string} downloadDir
+ * @param {string} profileName
+ * @param {string} companyName
+ * @returns {string | null}
+ */
+function buildProfileDatedCompanySaveDir(downloadDir, profileName, companyName) {
+  const root = String(downloadDir || "").trim();
+  const profileSeg = sanitizeCompanyFolderSegment(profileName);
+  const companySeg = sanitizeCompanyFolderSegment(companyName);
+  if (!root || !profileSeg || !companySeg) {
+    return null;
+  }
+  return path.join(root, profileSeg, todayDatePathSegment(), companySeg);
 }
 
 const GPT_DOC_SECTION_HEADERS =
@@ -1473,7 +1540,18 @@ function resolveUserFilePath(raw) {
       throw new Error("Invalid file URL");
     }
   }
-  return path.normalize(path.resolve(s));
+  if (path.isAbsolute(s)) {
+    return path.normalize(s);
+  }
+  const fromCwd = path.normalize(path.resolve(s));
+  if (fsSync.existsSync(fromCwd)) {
+    return fromCwd;
+  }
+  const fromAppRoot = path.normalize(path.join(appRoot, s.replace(/\//g, path.sep)));
+  if (fsSync.existsSync(fromAppRoot)) {
+    return fromAppRoot;
+  }
+  return fromCwd;
 }
 
 function applyLoginStartup() {
@@ -1858,6 +1936,34 @@ if (!gotLock) {
     return { ok: true, prompt: entry };
   });
 
+  ipcMain.handle("update-custom-prompt-path", async (_event, raw) => {
+    const rec = raw && typeof raw === "object" ? raw : {};
+    const id = String(rec.id || "").trim();
+    const promptPath = path.normalize(String(rec.promptPath || "").trim());
+    if (!id.startsWith("custom:")) {
+      return { ok: false, error: "Invalid prompt id." };
+    }
+    if (!promptPath || !fsSync.existsSync(promptPath)) {
+      return { ok: false, error: "Choose a valid prompt .txt file." };
+    }
+    const list = await readCustomPrompts();
+    const idx = list.findIndex((p) => p.id === id);
+    if (idx < 0) {
+      return { ok: false, error: "Prompt not found." };
+    }
+    const entry = normalizeCustomPromptEntry({
+      ...list[idx],
+      promptPath,
+    });
+    if (!entry) {
+      return { ok: false, error: "Could not save prompt path." };
+    }
+    const next = [...list];
+    next[idx] = entry;
+    await writeCustomPrompts(next);
+    return { ok: true, prompt: entry };
+  });
+
   ipcMain.handle("close-prompt-window", async (_event, raw) => {
     const id = String(
       raw && typeof raw === "object" && raw.id != null ? raw.id : raw || "",
@@ -1893,10 +1999,23 @@ if (!gotLock) {
   });
 
   ipcMain.handle("read-prompt-file-path", async (_event, raw) => {
-    const full = resolveUserFilePath(raw);
-    const content = await fs.readFile(full, "utf8");
-    const fileUrl = pathToFileURL(full).href;
-    return { content, path: full, fileUrl };
+    try {
+      const full = resolveUserFilePath(raw);
+      if (!fsSync.existsSync(full)) {
+        return { ok: false, code: "ENOENT", error: "File not found", path: full };
+      }
+      const content = await fs.readFile(full, "utf8");
+      const fileUrl = pathToFileURL(full).href;
+      return { ok: true, content, path: full, fileUrl };
+    } catch (e) {
+      const err = e && typeof e === "object" ? e : {};
+      return {
+        ok: false,
+        code: err.code || "READ_FAILED",
+        error: err.message || "Could not read file",
+        path: String(raw || "").trim(),
+      };
+    }
   });
 
   ipcMain.handle("save-prompt-external", async (_event, raw, content) => {
@@ -1923,7 +2042,7 @@ if (!gotLock) {
     const downloadKey = ipcDownloadKey(arg);
     const current = await getDownloadDirectoryForKey(downloadKey);
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-      title: "Choose download folder for Word exports",
+      title: "Choose global resume save folder",
       properties: ["openDirectory", "createDirectory"],
       defaultPath: current || app.getPath("documents"),
     });
@@ -1966,6 +2085,18 @@ if (!gotLock) {
     return describeGptDocxExportable(raw);
   });
 
+  /* Debug trace for the send → reply → Word build flow. */
+  ipcMain.handle("gpt-debug-log", (_event, msg) => {
+    try {
+      fsSync.appendFileSync(
+        path.join(app.getPath("userData"), "gpt-debug.log"),
+        `${new Date().toISOString()} ${String(msg)}\n`,
+      );
+    } catch (_e) {
+      /* ignore */
+    }
+  });
+
   ipcMain.handle("save-gpt-docx", async (event, payload) => {
     const win = dialogParentWindow(event);
     if (!win || win.isDestroyed()) {
@@ -1991,24 +2122,6 @@ if (!gotLock) {
       downloadKey: payload?.downloadKey,
       profile: payload?.profile,
     });
-    const personStem =
-      profile === "olu" ? "Oluwaseun Adeniji - Resume" : "Justin Mcghee - Resume";
-    const userFileStem = sanitizeDocxDefaultStem(
-      String(payload?.userFileName || "").trim(),
-    );
-    let stem = userFileStem;
-    if (!stem) {
-      stem = payload?.companyFolder
-        ? sanitizeDocxDefaultStem(payload?.defaultFileName || personStem)
-        : jsonObj
-          ? sanitizeDocxDefaultStem(suggestResumeDocxFileStemForProfile(profile, jsonObj))
-          : sanitizeDocxDefaultStem(
-              payload?.defaultFileName ||
-                (profile === "olu" ? "Oluwaseun Adeniji - Resume" : "Justin Mcghee - Resume"),
-            );
-    }
-    const defaultFileName = `${stem}.docx`;
-
     const downloadDir = await getDownloadDirectoryForKey(downloadKey);
     const companyRaw = String(payload?.companyFolder ?? "").trim();
     const companySeg = sanitizeCompanyFolderSegment(companyRaw);
@@ -2023,10 +2136,25 @@ if (!gotLock) {
         ok: false,
         needsDirectory: true,
         downloadKey,
-        error: "Set a download folder first (Set button under Downloads).",
+        error: "Set a global resume download folder first (Settings → Browse).",
       };
     }
-    const saveDir = path.join(downloadDir, companySeg);
+    const profileName =
+      sanitizeCompanyFolderSegment(String(payload?.profileName ?? "").trim()) ||
+      sanitizeCompanyFolderSegment(downloadKey) ||
+      "Profile";
+    const saveDir = buildProfileDatedCompanySaveDir(
+      downloadDir,
+      profileName,
+      companyRaw,
+    );
+    if (!saveDir) {
+      return {
+        ok: false,
+        error: "Set a profile name and company before downloading.",
+      };
+    }
+    const defaultFileName = `${profileName}.docx`;
     await fs.mkdir(saveDir, { recursive: true });
 
     const profileLabel = "Resume";
@@ -2042,7 +2170,7 @@ if (!gotLock) {
         ok: false,
         needsDirectory: true,
         downloadKey,
-        error: "Set a download folder first (Set button under Downloads).",
+        error: "Set a global resume download folder first (Settings → Browse).",
       };
     }
 

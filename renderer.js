@@ -8,15 +8,11 @@ const editPromptPathDisplay = document.getElementById("editPromptPathDisplay");
 const editPromptPathBrowseBtn = document.getElementById("editPromptPathBrowseBtn");
 const editPromptStructureDisplay = document.getElementById("editPromptStructureDisplay");
 const editPromptStructureBrowseBtn = document.getElementById("editPromptStructureBrowseBtn");
-const editPromptWordDirInput = document.getElementById("editPromptWordDirInput");
-const editPromptWordDirPickBtn = document.getElementById("editPromptWordDirPickBtn");
 const editPromptPopupHotkeyDisplay = document.getElementById("editPromptPopupHotkeyDisplay");
 const editPromptPopupHotkeySetBtn = document.getElementById("editPromptPopupHotkeySetBtn");
 const editPromptPopupHotkeyClearBtn = document.getElementById("editPromptPopupHotkeyClearBtn");
 const editPromptDeleteField = document.getElementById("editPromptDeleteField");
 const editPromptDeleteBtn = document.getElementById("editPromptDeleteBtn");
-const mainPromptWordDirInput = document.getElementById("mainPromptWordDirInput");
-const mainPromptWordDirPickBtn = document.getElementById("mainPromptWordDirPickBtn");
 const mainPromptStructureDisplay = document.getElementById("mainPromptStructureDisplay");
 const mainPromptStructureBrowseBtn = document.getElementById("mainPromptStructureBrowseBtn");
 const dedicatedPromptDirsPanel = document.getElementById("dedicatedPromptDirsPanel");
@@ -79,8 +75,6 @@ const dedicatedBrowserSideInner = document.getElementById("dedicatedBrowserSideI
 const dedicatedAddBrowserTabBtn = document.getElementById("dedicatedAddBrowserTabBtn");
 const dedicatedCompanySection = document.getElementById("dedicatedCompanySection");
 const dedicatedCompanyInput = document.getElementById("dedicatedCompanyInput");
-const dedicatedWordDirInput = document.getElementById("dedicatedWordDirInput");
-const dedicatedWordDirPickBtn = document.getElementById("dedicatedWordDirPickBtn");
 
 const DEDICATED_COMPANY_STORAGE_PREFIX = "prompt-builder.dedicated-company.";
 /** One company name for all prompts (not per user). */
@@ -772,14 +766,11 @@ const CHATGPT_PANE_FOLDER_OPEN_ICON_SVG =
 const CHATGPT_PANE_RESUME_FILE_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
 
-const DOCX_PREVIEW_COPY_ICON_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
-
-const DOCX_PREVIEW_ZOOM_ICON_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>';
-
 const CHATGPT_PANE_JD_FILE_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>';
+
+const CHATGPT_PANE_COPY_ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
 const CHROME_TAB_BROWSER_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
@@ -825,13 +816,11 @@ async function loadMainPromptStructureDirectory(kind) {
 
 /** @param {string} kind */
 async function loadMainPreviewDirectories(kind) {
-  if (!dedicatedPromptKind) {
-    await loadMainPromptWordDirectory(kind);
-  }
-  if (dedicatedPromptKind === kind) {
-    await loadDedicatedPromptWordDirectory(kind);
-  }
   await loadMainPromptStructureDirectory(kind);
+  if (dedicatedPromptKind === kind) {
+    await loadDedicatedPromptStructureDirectory(kind);
+  }
+  await syncGlobalResumeSaveRootDisplays();
 }
 
 /** @param {string} _kind */
@@ -932,6 +921,27 @@ function getPromptUserName(promptId) {
     /* ignore */
   }
   return defaultPromptUserName(id);
+}
+
+/** @param {string} name */
+function getUserInitials(name) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) {
+    return "?";
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/** @param {string} name @param {boolean} [small] */
+function userAvatarHtml(name, small) {
+  const cls = small ? "user-avatar user-avatar--sm" : "user-avatar";
+  return `<span class="${cls}" aria-hidden="true">${escapeHtml(getUserInitials(name))}</span>`;
 }
 
 /** @param {string} filePath */
@@ -1097,7 +1107,6 @@ function loadEditPromptSettings() {
     editPromptStructureDisplay.value = getPromptStructurePathForKind(kind);
     editPromptStructureDisplay.title = editPromptStructureDisplay.value;
   }
-  void loadEditPromptWordDirectory(kind);
   if (kind) {
     void refreshChatgptPaneWordDirectoriesForKind(kind);
   }
@@ -1105,7 +1114,113 @@ function loadEditPromptSettings() {
   if (editPromptDeleteField) {
     editPromptDeleteField.hidden = !kind;
   }
+  syncEditUserHeader(kind);
+  syncEditSavePathToday(kind);
+  syncEditPanelHeading(kind);
+  syncMainResumeSaveRootDisplay();
   syncEditLayoutEmptyState();
+}
+
+function syncEditPanelHeading(kind) {
+  if (!editPanelTitle) {
+    return;
+  }
+  editPanelTitle.textContent = "Prompt content";
+  if (!kind) {
+    editPanelTitle.title = "";
+    return;
+  }
+  const path = getPromptPathForKind(kind);
+  editPanelTitle.title = path ? fileNameFromPath(path) : "";
+}
+
+function syncEditUserHeader(kind) {
+  const header = document.getElementById("editUserHeader");
+  const avatar = document.getElementById("editUserHeaderAvatar");
+  const nameEl = document.getElementById("editUserHeaderName");
+  if (!(header instanceof HTMLElement)) {
+    return;
+  }
+  if (!kind) {
+    header.hidden = true;
+    return;
+  }
+  const name = getPromptUserName(kind);
+  header.hidden = false;
+  if (avatar instanceof HTMLElement) {
+    avatar.textContent = getUserInitials(name);
+  }
+  if (nameEl instanceof HTMLElement) {
+    nameEl.textContent = name;
+    nameEl.title = name;
+  }
+}
+
+/** @param {string} [kind] */
+function buildTodaySavePathPreview(kind) {
+  const id = kind || getEditPromptSettingsKind();
+  if (!id) {
+    return "";
+  }
+  const mainEl = document.getElementById("mainResumeSaveRootDisplay");
+  const editEl = document.getElementById("editResumeSaveRootDisplay");
+  const root = String(
+    (mainEl instanceof HTMLInputElement ? mainEl.value : "") ||
+      (editEl instanceof HTMLInputElement ? editEl.value : ""),
+  ).trim();
+  if (!root) {
+    return "";
+  }
+  const now = new Date();
+  const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const company = "{company}";
+  const sep = root.includes("\\") ? "\\" : "/";
+  return `${root}${sep}${date}${sep}${company}${sep}{profile name}.docx`;
+}
+
+/** @param {string} [kind] */
+function syncEditSavePathToday(kind) {
+  const el = document.getElementById("editPromptSavePathToday");
+  if (!(el instanceof HTMLInputElement)) {
+    return;
+  }
+  const preview = buildTodaySavePathPreview(kind);
+  el.value = preview;
+  el.title = preview;
+}
+
+async function getGlobalResumeSaveRootPath() {
+  const api = window.promptApi;
+  if (!api || typeof api.getDownloadDirectory !== "function") {
+    return "";
+  }
+  try {
+    const r = await api.getDownloadDirectory("global");
+    return String(r?.directory || "").trim();
+  } catch (_e) {
+    return "";
+  }
+}
+
+async function syncGlobalResumeSaveRootDisplays() {
+  const root = await getGlobalResumeSaveRootPath();
+  const el = document.getElementById("mainResumeSaveRootDisplay");
+  const editEl = document.getElementById("editResumeSaveRootDisplay");
+  if (el instanceof HTMLInputElement) {
+    el.value = root;
+    el.title = root;
+    el.placeholder = root ? "" : "Choose global resume save folder…";
+  }
+  if (editEl instanceof HTMLInputElement) {
+    editEl.value = root;
+    editEl.title = root;
+    editEl.placeholder = root ? "" : "Choose global resume save folder…";
+  }
+  syncEditSavePathToday(getEditPromptSettingsKind() || undefined);
+}
+
+function syncMainResumeSaveRootDisplay() {
+  void syncGlobalResumeSaveRootDisplays();
 }
 
 /** @param {string} kind */
@@ -1302,6 +1417,11 @@ async function deleteCustomPromptForKind(kind) {
   }
 }
 
+/** @param {unknown} r */
+function isPromptReadSuccess(r) {
+  return !!(r && typeof r === "object" && typeof r.content === "string");
+}
+
 /** @param {string | null | undefined} promptPath */
 async function tryReadPromptFileAtPath(promptPath) {
   const p = String(promptPath || "").trim();
@@ -1309,21 +1429,128 @@ async function tryReadPromptFileAtPath(promptPath) {
     return null;
   }
   try {
-    return await window.promptApi.readPromptFilePath(p);
+    const r = await window.promptApi.readPromptFilePath(p);
+    if (!r || typeof r !== "object") {
+      return null;
+    }
+    if (r.ok === false) {
+      return r;
+    }
+    if (typeof r.content === "string") {
+      return { content: r.content, path: r.path, fileUrl: r.fileUrl };
+    }
+    return null;
   } catch (_e) {
     return null;
+  }
+}
+
+/** @returns {HTMLTextAreaElement | null} */
+function getEditTemplateEl() {
+  return document.getElementById("editTemplate");
+}
+
+/** @param {string} text @param {{ loading?: boolean }} [opts] */
+function setPromptEditorContent(text, opts = {}) {
+  const el = getEditTemplateEl();
+  if (!el) {
+    return;
+  }
+  el.value = text;
+  el.placeholder = opts.loading
+    ? "Loading prompt…"
+    : "Choose a prompt file or click Reload after fixing the path.";
+}
+
+/** @param {string} content */
+function applyPromptEditorContent(content) {
+  setPromptEditorContent(content);
+}
+
+/** @param {string} kind @param {string} path */
+function promptLoadFailureMessage(kind, path) {
+  const displayPath = String(path || getPromptPathForKind(kind) || "").trim();
+  const lines = [
+    "Could not load prompt file.",
+    displayPath ? `\nPath:\n${displayPath}` : "",
+    "\nUse the folder button next to Prompt file to choose a .txt file, then click Reload.",
+  ];
+  return lines.join("");
+}
+
+/**
+ * Load prompt text into the editor for a user.
+ * @param {string} kind
+ * @returns {Promise<boolean>}
+ */
+async function loadPromptIntoEditor(kind) {
+  if (!isBuiltinPromptKind(kind) && !isCustomPromptKind(kind)) {
+    return false;
+  }
+  setPromptEditorContent("", { loading: true });
+  try {
+    editPromptSettingsKind = kind;
+    if (isBuiltinPromptKind(kind)) {
+      editSelection = /** @type {"other" | "justin"} */ (kind);
+    }
+    const promptPath = getPromptPathForKind(kind);
+    const r = await tryReadPromptFileAtPath(promptPath);
+    if (isPromptReadSuccess(r)) {
+      if (isBuiltinPromptKind(kind)) {
+        setStrForEdit(kind, r.content);
+      } else if (isCustomPromptKind(kind)) {
+        customTemplateStrById[kind] = r.content;
+      }
+      applyExternalEditor(r.path, r.fileUrl || "", r.content, { preserveSettingsKind: true });
+      syncEditPanelHeading(kind);
+      setEditFileNavActive(kind);
+      loadEditPromptSettings();
+      refreshPromptDisplayNamesAcrossUi();
+      return true;
+    }
+    if (isCustomPromptKind(kind)) {
+      delete customTemplateStrById[kind];
+    }
+    const failPath = (r && typeof r === "object" && r.path) || promptPath;
+    editMode = "external";
+    externalAbsPath = failPath || "";
+    if (editFileUrlInput) {
+      editFileUrlInput.value = "";
+    }
+    applyPromptEditorContent(promptLoadFailureMessage(kind, failPath));
+    syncEditPanelHeading(kind);
+    if (editPanelTitle && failPath) {
+      editPanelTitle.title = fileNameFromPath(failPath);
+    }
+    setEditFileNavActive(kind);
+    loadEditPromptSettings();
+    refreshPromptDisplayNamesAcrossUi();
+    toast(
+      failPath
+        ? "Prompt file not found. Use the folder button next to Prompt file to choose a .txt file."
+        : "No prompt file set. Use the folder button next to Prompt file to choose a .txt file.",
+      "error",
+      6500,
+    );
+    return false;
+  } catch (_e) {
+    applyPromptEditorContent(promptLoadFailureMessage(kind, getPromptPathForKind(kind)));
+    return false;
   }
 }
 
 /** @param {string} kind @param {{ silent?: boolean }} [opts] */
 async function reloadPromptTemplateForKind(kind, opts = {}) {
   const path = getPromptPathForKind(kind);
-  if (!path || !window.promptApi?.readPromptFilePath) {
+  if (!path) {
+    if (!opts.silent) {
+      toast("No prompt file set.", "error");
+    }
     return;
   }
   try {
     const r = await tryReadPromptFileAtPath(path);
-    if (!r) {
+    if (!isPromptReadSuccess(r)) {
       throw new Error("missing");
     }
     if (isBuiltinPromptKind(kind)) {
@@ -1348,40 +1575,98 @@ async function reloadPromptTemplateForKind(kind, opts = {}) {
 }
 
 /** @param {string} kind @param {string} promptPath */
+function setPromptPathForKindInMemory(kind, promptPath) {
+  const normalized = String(promptPath || "").trim();
+  if (!normalized) {
+    return;
+  }
+  if (isCustomPromptKind(kind)) {
+    const entry = getCustomPromptByKind(kind);
+    if (entry) {
+      entry.promptPath = normalized;
+    }
+    return;
+  }
+  if (isBuiltinPromptKind(kind)) {
+    try {
+      localStorage.setItem(promptPathStorageKey(kind), normalized);
+    } catch (_e) {
+      /* ignore */
+    }
+  }
+}
+
+/** @param {string} kind @param {string} promptPath */
+function syncPromptPathDisplay(kind, promptPath) {
+  const normalized = String(promptPath || getPromptPathForKind(kind) || "").trim();
+  if (editPromptPathDisplay) {
+    editPromptPathDisplay.value = normalized;
+    editPromptPathDisplay.title = normalized;
+  }
+  if (kind) {
+    syncEditPanelHeading(kind);
+  }
+}
+
+/** @param {string} kind @param {{ path: string, fileUrl?: string, content: string }} pick */
+function applyPromptFilePickForKind(kind, pick) {
+  const path = String(pick.path || "").trim();
+  const content = String(pick.content ?? "");
+  if (!path) {
+    return;
+  }
+  setPromptPathForKindInMemory(kind, path);
+  syncPromptPathDisplay(kind, path);
+  if (isCustomPromptKind(kind)) {
+    customTemplateStrById[kind] = content;
+  } else if (isBuiltinPromptKind(kind)) {
+    setStrForEdit(kind, content);
+  }
+  applyExternalEditor(path, pick.fileUrl || "", content, { preserveSettingsKind: true });
+  syncEditPanelHeading(kind);
+  setEditFileNavActive(kind);
+  loadEditPromptSettings();
+  refreshBuildPreviewIfCardSelected();
+  refreshPromptDisplayNamesAcrossUi();
+}
+
+/** @param {string} kind @param {string} promptPath @returns {Promise<{ ok: boolean, error?: string }>} */
 async function persistPromptPathForKind(kind, promptPath) {
   const id = String(kind || "").trim();
   const normalized = String(promptPath || "").trim();
   if (!id || !normalized) {
-    return;
+    return { ok: false, error: "No prompt path provided." };
   }
   if (isBuiltinPromptKind(id)) {
     try {
       localStorage.setItem(promptPathStorageKey(id), normalized);
     } catch (_e) {
-      /* ignore */
+      return { ok: false, error: "Could not save prompt path." };
     }
     await reloadPromptTemplateForKind(id);
-    return;
+    return { ok: true };
   }
   const entry = getCustomPromptByKind(id);
   const api = window.promptApi;
-  if (!entry || !api?.saveCustomPrompt) {
-    return;
+  if (!entry || !api?.updateCustomPromptPath) {
+    return { ok: false, error: "Could not save prompt path." };
   }
   try {
-    const r = await api.saveCustomPrompt({
+    const r = await api.updateCustomPromptPath({
       id: entry.id,
-      label: entry.label,
       promptPath: normalized,
-      structurePath: entry.structurePath,
-      chatgptProfile: entry.chatgptProfile,
     });
-    if (r?.ok) {
-      await refreshCustomPrompts();
-      await reloadPromptTemplateForKind(id);
+    if (!r?.ok) {
+      return { ok: false, error: String(r?.error || "Could not save prompt path.") };
     }
+    if (r.prompt?.promptPath) {
+      setPromptPathForKindInMemory(id, r.prompt.promptPath);
+    }
+    await refreshCustomPrompts();
+    await reloadPromptTemplateForKind(id, { silent: true });
+    return { ok: true };
   } catch (_e) {
-    /* ignore */
+    return { ok: false, error: "Could not save prompt path." };
   }
 }
 
@@ -1523,12 +1808,29 @@ function refreshPromptDisplayNamesAcrossUi() {
       return;
     }
     const labelEl = btn.querySelector(".edit-file-label");
-    if (!labelEl) {
-      return;
-    }
+    const hotkeyEl = btn.querySelector(".edit-file-hotkey");
+    const avatarEl = btn.querySelector(".user-avatar");
     if (isBuiltinPromptKind(kind) || isCustomPromptKind(kind)) {
       const name = getPromptUserName(kind);
-      labelEl.textContent = name;
+      if (labelEl) {
+        labelEl.textContent = name;
+      }
+      if (avatarEl) {
+        avatarEl.textContent = getUserInitials(name);
+      }
+      const hotkey = getPromptPopupHotkey(kind);
+      if (hotkeyEl) {
+        hotkeyEl.textContent = hotkey;
+        hotkeyEl.hidden = !hotkey;
+      } else if (hotkey) {
+        const textWrap = btn.querySelector(".edit-file-btn-text");
+        if (textWrap) {
+          const span = document.createElement("span");
+          span.className = "edit-file-hotkey";
+          span.textContent = hotkey;
+          textWrap.appendChild(span);
+        }
+      }
       btn.title = "Edit prompt and settings";
     }
   });
@@ -1647,7 +1949,7 @@ function buildPromptCardElement(prompt) {
       : "other-heading"
     : "";
   const headingAttr = topicId ? ` id="${topicId}"` : "";
-  section.innerHTML = `<div class="prompt-card-body"><div class="prompt-card-text"><h3 class="prompt-card-topic"${headingAttr}>${escapeHtml(prompt.label)}</h3></div><div class="prompt-card-actions">${promptCardActionsHtml(prompt.id, prompt.label)}</div></div>`;
+  section.innerHTML = `<div class="prompt-card-body"><div class="prompt-card-text">${userAvatarHtml(prompt.label)}<div class="prompt-card-name-wrap"><h3 class="prompt-card-topic"${headingAttr}>${escapeHtml(prompt.label)}</h3><p class="prompt-card-hotkey">${escapeHtml(getPromptPopupHotkey(prompt.id) || "No hotkey")}</p></div></div><div class="prompt-card-actions">${promptCardActionsHtml(prompt.id, prompt.label)}</div></div>`;
   return section;
 }
 
@@ -1770,7 +2072,13 @@ const CHATGPT_HOME_URL = "https://chatgpt.com/";
 const CHATGPT_EMAIL_LOGIN_URL = "https://auth.openai.com/log-in";
 
 /** @param {string} url */
+const ALLOW_FEDERATED_SIGNIN = true;
+
 function isBlockedFederatedAuthUrl(url) {
+  // Google / Microsoft / Apple sign-in is allowed in the app (no blocking).
+  if (ALLOW_FEDERATED_SIGNIN) {
+    return false;
+  }
   if (!url || url.startsWith("about:")) {
     return false;
   }
@@ -1878,11 +2186,8 @@ function setupChatgptAuthNavigationGuard(wv) {
     if (!isBlockedFederatedAuthUrl(e.url)) {
       return;
     }
+    // Stay in this pane: no separate login window.
     redirectFromBlockedAuth();
-    const part = wv.getAttribute("partition") || "persist:chatgpt";
-    if (typeof window.promptApi?.openChatgptLoginWindow === "function") {
-      void window.promptApi.openChatgptLoginWindow({ partition: part });
-    }
   });
 
   wv.addEventListener("new-window", (e) => {
@@ -2811,7 +3116,27 @@ function getMainCompanyName() {
   return mainCompanyInput?.value?.trim() || "";
 }
 
-function getCompanyFolderForDownload() {
+/**
+ * Browser tab entry with its form state up to date. The shared JD / company inputs only
+ * reflect the tab currently shown, so flush them into that tab's entry before reading.
+ * @param {string | null | undefined} browserTabId
+ */
+function getBrowserTabEntryForDownload(browserTabId) {
+  if (!browserTabId) {
+    return null;
+  }
+  if (browserTabId === dedicatedActiveWorkspacePage) {
+    saveDedicatedBrowserTabFormState(browserTabId);
+  }
+  return dedicatedBrowserTabs.find((t) => t.id === browserTabId) ?? null;
+}
+
+/** @param {string | null | undefined} [browserTabId] owning tab of the result */
+function getCompanyFolderForDownload(browserTabId) {
+  const entry = getBrowserTabEntryForDownload(browserTabId);
+  if (entry) {
+    return String(entry.company ?? "").trim();
+  }
   if (dedicatedPromptKind) {
     return getDedicatedCompanyName();
   }
@@ -2820,11 +3145,9 @@ function getCompanyFolderForDownload() {
 
 /** @param {string | null | undefined} browserTabId */
 function getJdTextForDownload(browserTabId) {
-  if (browserTabId) {
-    const entry = dedicatedBrowserTabs.find((t) => t.id === browserTabId);
-    if (entry) {
-      return String(jdInput?.value ?? entry.jd ?? "").trim();
-    }
+  const entry = getBrowserTabEntryForDownload(browserTabId);
+  if (entry) {
+    return String(entry.jd ?? "").trim();
   }
   return String(jdInput?.value ?? "").trim();
 }
@@ -2853,7 +3176,9 @@ function onBuildInputsChanged() {
   if (dedicatedPromptKind && dedicatedActiveWorkspacePage !== "prompt") {
     saveDedicatedBrowserTabFormState(dedicatedActiveWorkspacePage);
   }
-  refreshBuildPreviewIfCardSelected();
+  if (!(dedicatedPromptKind && dedicatedActiveWorkspacePage === "prompt")) {
+    refreshBuildPreviewIfCardSelected();
+  }
 }
 
 function afterPasteApply(el, onNonEmpty) {
@@ -3058,10 +3383,22 @@ function fillGptDownloadStatusEl(textEl, savedName, folderPath, jdFileName, who)
   line1.appendChild(strong);
   textEl.appendChild(line1);
   if (folderPath) {
+    const pathRow = document.createElement("div");
+    pathRow.className = "chatgpt-pane-download-status-path-row";
+
     const line2 = document.createElement("code");
     line2.className = "chatgpt-pane-download-status-path";
     line2.textContent = folderPath;
-    textEl.appendChild(line2);
+
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "btn-icon chatgpt-pane-download-copy-path";
+    copyBtn.innerHTML = CHATGPT_PANE_COPY_ICON_SVG;
+    copyBtn.title = "Copy folder path";
+    copyBtn.setAttribute("aria-label", "Copy folder path");
+
+    pathRow.append(line2, copyBtn);
+    textEl.appendChild(pathRow);
   }
 }
 
@@ -3117,36 +3454,12 @@ async function openGptDownloadFromBar(bar, kind) {
 }
 
 /** @param {HTMLElement} previewWrap */
-function appendDocxPreviewActionButtons(previewWrap) {
-  const actions = document.createElement("div");
-  actions.className = "chatgpt-pane-download-resume-preview-actions";
-
-  const copyBtn = document.createElement("button");
-  copyBtn.type = "button";
-  copyBtn.className = "btn-icon chatgpt-pane-download-preview-copy";
-  copyBtn.innerHTML = DOCX_PREVIEW_COPY_ICON_SVG;
-  copyBtn.title = "Copy resume file";
-  copyBtn.setAttribute("aria-label", "Copy resume file");
-  copyBtn.disabled = true;
-
-  const zoomBtn = document.createElement("button");
-  zoomBtn.type = "button";
-  zoomBtn.className = "btn-icon chatgpt-pane-download-preview-zoom";
-  zoomBtn.innerHTML = DOCX_PREVIEW_ZOOM_ICON_SVG;
-  zoomBtn.title = "Open document preview";
-  zoomBtn.setAttribute("aria-label", "Open document preview");
-  zoomBtn.disabled = true;
-
-  actions.append(copyBtn, zoomBtn);
-  return actions;
-}
-
-/** @param {HTMLElement} previewWrap */
 function ensureDownloadResumePreviewHead(previewWrap) {
   if (!(previewWrap instanceof HTMLElement)) {
     return;
   }
   if (previewWrap.querySelector(".chatgpt-pane-download-resume-preview-head")) {
+    previewWrap.querySelector(".chatgpt-pane-download-resume-preview-actions")?.remove();
     return;
   }
   const label = previewWrap.querySelector(".chatgpt-pane-download-resume-preview-label");
@@ -3157,7 +3470,7 @@ function ensureDownloadResumePreviewHead(previewWrap) {
   const head = document.createElement("div");
   head.className = "chatgpt-pane-download-resume-preview-head";
   label.remove();
-  head.append(label, appendDocxPreviewActionButtons(previewWrap));
+  head.append(label);
   previewWrap.insertBefore(head, host);
 }
 
@@ -3167,65 +3480,29 @@ function getDocxPreviewHostFromBar(bar) {
 }
 
 /** @param {HTMLElement} bar */
-function updateDocxPreviewActionButtons(bar) {
+function updateDocxPreviewInteractivity(bar) {
   const wrap = bar.querySelector(".chatgpt-pane-download-resume-preview");
   if (!(wrap instanceof HTMLElement)) {
     return;
   }
   ensureDownloadResumePreviewHead(wrap);
-  const copyBtn = wrap.querySelector(".chatgpt-pane-download-preview-copy");
-  const zoomBtn = wrap.querySelector(".chatgpt-pane-download-preview-zoom");
   const host = getDocxPreviewHostFromBar(bar);
   const hasDoc = !!host?.querySelector("section.docx-resume");
   const filePath = String(bar.dataset.statusFilePath || "").trim();
-  const enabled = hasDoc && !!filePath;
-  for (const btn of [copyBtn, zoomBtn]) {
-    if (btn instanceof HTMLButtonElement) {
-      btn.disabled = !enabled;
-      if (btn === copyBtn) {
-        btn.title = "Copy resume file";
-        btn.setAttribute("aria-label", "Copy resume file");
-      }
+  const openable = hasDoc && !!filePath;
+  if (host instanceof HTMLElement) {
+    host.classList.toggle("docx-preview-openable", openable);
+    if (openable) {
+      host.setAttribute("role", "button");
+      host.setAttribute("tabindex", "0");
+      host.setAttribute("title", "Open document preview");
+      host.setAttribute("aria-label", "Open document preview");
+    } else {
+      host.removeAttribute("role");
+      host.removeAttribute("tabindex");
+      host.removeAttribute("title");
+      host.setAttribute("aria-label", "Resume preview");
     }
-  }
-}
-
-/** @param {HTMLElement} bar */
-async function copyDocxPreviewFromBar(bar) {
-  const filePath = String(bar.dataset.statusFilePath || "").trim();
-  if (!filePath) {
-    toast("No resume file to copy.", "error");
-    return;
-  }
-  const api = window.promptApi;
-  if (!api?.copyResumeFileToClipboard) {
-    toast("Copy resume file is not available. Restart the app.", "error");
-    return;
-  }
-  try {
-    const r = await api.copyResumeFileToClipboard(filePath);
-    if (!r?.ok) {
-      toast(String(r?.error || "Could not copy resume file."), "error");
-      return;
-    }
-    const name = fileNameFromPath(filePath) || "resume";
-    toast(
-      r.pathOnly
-        ? `Copied file path: ${name}`
-        : `Copied ${name}. Paste in File Explorer, email, or chat.`,
-      "success",
-      4500,
-    );
-  } catch (e) {
-    const msg =
-      e && typeof e === "object" && "message" in e ? String(e.message) : String(e);
-    toast(
-      /no handler registered/i.test(msg)
-        ? "Copy resume file needs an app restart (stop npm start, then start again)."
-        : msg || "Could not copy resume file.",
-      "error",
-      6500,
-    );
   }
 }
 
@@ -3285,21 +3562,27 @@ function setupDocxPreviewModal() {
 }
 
 /** @param {HTMLElement} bar */
-function bindDocxPreviewActionHandlers(bar) {
-  const copyBtn = bar.querySelector(".chatgpt-pane-download-preview-copy");
-  const zoomBtn = bar.querySelector(".chatgpt-pane-download-preview-zoom");
-  if (copyBtn instanceof HTMLButtonElement && copyBtn.dataset.handlerBound !== "1") {
-    copyBtn.dataset.handlerBound = "1";
-    copyBtn.addEventListener("click", () => {
-      void copyDocxPreviewFromBar(bar);
-    });
+function bindDocxPreviewOpenHandler(bar) {
+  const host = getDocxPreviewHostFromBar(bar);
+  if (!(host instanceof HTMLElement) || host.dataset.openHandlerBound === "1") {
+    return;
   }
-  if (zoomBtn instanceof HTMLButtonElement && zoomBtn.dataset.handlerBound !== "1") {
-    zoomBtn.dataset.handlerBound = "1";
-    zoomBtn.addEventListener("click", () => {
+  host.dataset.openHandlerBound = "1";
+  host.addEventListener("click", () => {
+    if (!host.classList.contains("docx-preview-openable")) {
+      return;
+    }
+    void openDocxPreviewModalFromBar(bar);
+  });
+  host.addEventListener("keydown", (e) => {
+    if (!host.classList.contains("docx-preview-openable")) {
+      return;
+    }
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
       void openDocxPreviewModalFromBar(bar);
-    });
-  }
+    }
+  });
 }
 
 /** @param {HTMLElement} bar */
@@ -3307,11 +3590,11 @@ function bindDownloadStatusBarActions(bar) {
   const previewWrap = bar.querySelector(".chatgpt-pane-download-resume-preview");
   if (previewWrap instanceof HTMLElement) {
     ensureDownloadResumePreviewHead(previewWrap);
-    bindDocxPreviewActionHandlers(bar);
+    bindDocxPreviewOpenHandler(bar);
   }
 
   if (bar.dataset.actionsBound === "1") {
-    updateDocxPreviewActionButtons(bar);
+    updateDocxPreviewInteractivity(bar);
     return;
   }
   bar.dataset.actionsBound = "1";
@@ -3329,6 +3612,24 @@ function bindDownloadStatusBarActions(bar) {
   jdBtn?.addEventListener("click", () => {
     void openGptDownloadFromBar(bar, "jd");
   });
+
+  if (bar.dataset.pathCopyBound !== "1") {
+    bar.dataset.pathCopyBound = "1";
+    bar.addEventListener("click", (e) => {
+      const btn =
+        e.target instanceof HTMLElement
+          ? e.target.closest(".chatgpt-pane-download-copy-path")
+          : null;
+      if (!(btn instanceof HTMLElement) || !bar.contains(btn)) {
+        return;
+      }
+      const folderPath = String(bar.dataset.statusFolderPath || "").trim();
+      void copyStringToClipboard(folderPath, {
+        emptyMsg: "No folder path to copy.",
+        successMsg: "Copied folder path.",
+      });
+    });
+  }
 }
 
 /** @param {HTMLElement} host */
@@ -3608,7 +3909,7 @@ async function refreshDownloadStatusResumePreview(bar, _pane) {
   previewWrap.hidden = false;
   ensureDocxPreviewAutoFit(previewHost);
   await renderDocxFilePreview(previewHost, filePath);
-  updateDocxPreviewActionButtons(bar);
+  updateDocxPreviewInteractivity(bar);
 }
 
 /** @returns {HTMLElement} */
@@ -3674,7 +3975,7 @@ function createChatgptPaneDownloadStatusBarElement() {
   previewHost.className = "chatgpt-pane-download-resume-preview-body docx-resume-preview-body";
   previewHost.setAttribute("aria-label", "Resume preview");
 
-  previewHead.append(previewLabel, appendDocxPreviewActionButtons(previewWrap));
+  previewHead.append(previewLabel);
   previewWrap.append(previewHead, previewHost);
   content.append(text, actions, previewWrap);
   bar.append(loading, content);
@@ -3704,7 +4005,7 @@ function getDedicatedJdDownloadStatusHost() {
   return host;
 }
 
-/** Keep download status directly under Resume Download Directory settings. */
+/** Keep download status near build preview settings. */
 function repositionDedicatedJdDownloadStatusHost() {
   const host = document.getElementById("dedicatedJdDownloadStatusHost");
   if (!host) {
@@ -4051,6 +4352,8 @@ function setEditFileNavActive(key) {
     btn.classList.add("edit-file-active");
     btn.setAttribute("aria-selected", "true");
   }
+  syncPromptCardHighlightFromKind(key);
+  syncMainChatgptPaneHighlights();
 }
 
 /**
@@ -4060,8 +4363,9 @@ function setEditFileNavActive(key) {
  * @param {{ preserveSettingsKind?: boolean }} [opts]
  */
 function applyExternalEditor(path, fileUrl, content, opts = {}) {
-  if (editMode === "builtin") {
-    setStrForEdit(editSelection, editTemplate.value);
+  const el = getEditTemplateEl();
+  if (editMode === "builtin" && el) {
+    setStrForEdit(editSelection, el.value);
   }
   editMode = "external";
   externalAbsPath = path;
@@ -4071,15 +4375,19 @@ function applyExternalEditor(path, fileUrl, content, opts = {}) {
   if (editFileUrlInput) {
     editFileUrlInput.value = fileUrl;
   }
-  editTemplate.value = content;
+  applyPromptEditorContent(content);
   const kind = getEditPromptSettingsKind();
   if (kind) {
-    editPanelTitle.textContent = getPromptUserName(kind);
-    editPanelTitle.title = fileNameFromPath(path);
+    syncEditPanelHeading(kind);
+    if (editPanelTitle) {
+      editPanelTitle.title = fileNameFromPath(path);
+    }
     setEditFileNavActive(kind);
   } else {
-    editPanelTitle.innerHTML = `<code>${fileNameFromPath(path)}</code>`;
-    editPanelTitle.title = "";
+    syncEditPanelHeading(null);
+    if (editPanelTitle) {
+      editPanelTitle.title = "";
+    }
     clearEditFileNavActive();
   }
   loadEditPromptSettings();
@@ -4090,52 +4398,16 @@ async function openEditKey(key) {
   if (!isBuiltinPromptKind(key) || !isPromptKindAvailable(key)) {
     return;
   }
-  if (editMode === "builtin" && isBuiltinPromptKind(editSelection)) {
-    setStrForEdit(editSelection, editTemplate.value);
+  if (editMode === "builtin" && isBuiltinPromptKind(editSelection) && getEditTemplateEl()) {
+    setStrForEdit(editSelection, getEditTemplateEl().value);
   } else if (
     editMode === "external" &&
     isBuiltinPromptKind(editPromptSettingsKind) &&
-    editTemplate
+    getEditTemplateEl()
   ) {
-    setStrForEdit(editPromptSettingsKind, editTemplate.value);
+    setStrForEdit(editPromptSettingsKind, getEditTemplateEl().value);
   }
-  editSelection = key;
-  editPromptSettingsKind = key;
-  const promptPath = getPromptPathForKind(key);
-  let r = await tryReadPromptFileAtPath(promptPath);
-  if (!r && promptPath !== defaultPromptPathForKind(key)) {
-    r = await tryReadPromptFileAtPath(defaultPromptPathForKind(key));
-  }
-  if (r) {
-    setStrForEdit(key, r.content);
-    applyExternalEditor(r.path, r.fileUrl, r.content, { preserveSettingsKind: true });
-    editPanelTitle.textContent = getPromptUserName(key);
-    editPanelTitle.title = `${EDIT_LABELS[key]} — ${fileNameFromPath(r.path)}`;
-    setEditFileNavActive(key);
-    loadEditPromptSettings();
-    refreshPromptDisplayNamesAcrossUi();
-    return;
-  }
-  editMode = "builtin";
-  externalAbsPath = "";
-  if (editFileUrlInput) {
-    editFileUrlInput.value = "";
-  }
-  editTemplate.value = getStrForEdit(key);
-  editPanelTitle.textContent = getPromptUserName(key);
-  editPanelTitle.title = promptPath
-    ? `${EDIT_LABELS[key]} — file not found`
-    : EDIT_LABELS[key];
-  setEditFileNavActive(key);
-  loadEditPromptSettings();
-  refreshPromptDisplayNamesAcrossUi();
-  toast(
-    promptPath
-      ? "Prompt file not found. Use the folder button next to Prompt file to choose a .txt file."
-      : "No prompt file set. Use the folder button next to Prompt file to choose a .txt file.",
-    "error",
-    6500,
-  );
+  await loadPromptIntoEditor(key);
 }
 
 function ensureMainWindowTabLayout() {
@@ -4277,27 +4549,23 @@ function reloadChatgptWebviewsForPartition(partition) {
 
 /** @param {HTMLElement} btn */
 async function openChatgptSignInForPaneButton(btn) {
-  const partition = getChatgptPartitionForPaneButton(btn);
-  if (typeof window.promptApi?.openChatgptLoginWindow === "function") {
-    await window.promptApi.openChatgptLoginWindow({ partition });
+  // Sign in inside the pane itself (same session/partition) — no popup window.
+  const tabId = btn.getAttribute("data-dedicated-browser-tab");
+  const promptId = btn.getAttribute("data-prompt");
+  const profile = btn.getAttribute("data-chatgpt-profile");
+  /** @type {HTMLElement | null} */
+  let wv = null;
+  if (tabId) {
+    const entry = dedicatedBrowserTabs.find((t) => t.id === tabId);
+    wv = entry?.paneEl?.querySelector(".chatgpt-webview") ?? null;
+  } else if (promptId) {
+    wv = getChatgptWebviewForKind(promptId);
   } else {
-    const tabId = btn.getAttribute("data-dedicated-browser-tab");
-    const promptId = btn.getAttribute("data-prompt");
-    const profile = btn.getAttribute("data-chatgpt-profile");
-    /** @type {HTMLElement | null} */
-    let wv = null;
-    if (tabId) {
-      const entry = dedicatedBrowserTabs.find((t) => t.id === tabId);
-      wv = entry?.paneEl?.querySelector(".chatgpt-webview") ?? null;
-    } else if (promptId) {
-      wv = getChatgptWebviewForKind(promptId);
-    } else {
-      wv = getChatgptWebviewForProfile(profile === "justin" ? "justin" : "olu");
-    }
-    navigateChatgptWebviewToEmailLogin(wv);
+    wv = getChatgptWebviewForProfile(profile === "justin" ? "justin" : "olu");
   }
+  navigateChatgptWebviewToEmailLogin(wv);
   toast(
-    "In the sign-in window: choose email (not Google). Enter email → password. Close the window when ChatGPT loads.",
+    "Sign in here in the pane: choose email (not Google), then email → password.",
     "success",
     11000,
   );
@@ -4684,14 +4952,6 @@ function setupMainCompanyInput() {
 }
 
 function setupMainPromptWordDirectory() {
-  mainPromptWordDirPickBtn?.addEventListener("click", () => {
-    const kind = getSelectedPromptKind();
-    if (!kind) {
-      toast("Select a prompt first.", "error");
-      return;
-    }
-    void pickWordDirectoryForKey(kind);
-  });
   mainPromptStructureBrowseBtn?.addEventListener("click", async () => {
     const kind = getSelectedPromptKind();
     if (!kind) {
@@ -4739,18 +4999,11 @@ function setupMainPromptWordDirectory() {
 
 function setupEditPromptSettings() {
   editPromptUserNameInput?.addEventListener("input", () => {
+    syncEditUserHeader(getEditPromptSettingsKind());
     persistEditPromptSettingsFromInputs();
   });
   editPromptUserNameInput?.addEventListener("change", () => {
     persistEditPromptSettingsFromInputs();
-  });
-  editPromptWordDirPickBtn?.addEventListener("click", () => {
-    const kind = getEditPromptSettingsKind();
-    if (!kind) {
-      toast("Select a prompt to edit first.", "error");
-      return;
-    }
-    void pickWordDirectoryForKey(kind);
   });
   editPromptPathDisplay?.addEventListener("click", () => {
     editPromptPathBrowseBtn?.click();
@@ -4771,12 +5024,12 @@ function setupEditPromptSettings() {
       if (r?.canceled || !r?.path) {
         return;
       }
-      await persistPromptPathForKind(kind, r.path);
-      if (editPromptPathDisplay) {
-        editPromptPathDisplay.value = r.path;
-        editPromptPathDisplay.title = r.path;
+      const saved = await persistPromptPathForKind(kind, r.path);
+      if (!saved.ok) {
+        toast(saved.error || "Could not save prompt path.", "error", 6500);
+        return;
       }
-      loadEditPromptSettings();
+      applyPromptFilePickForKind(kind, r);
       toast("Prompt file updated.", "success", 4000);
     } catch (_e) {
       toast("Could not choose prompt file.", "error");
@@ -4939,12 +5192,6 @@ function setupDedicatedCompanyInput() {
       persistDedicatedCompanyName();
     }
   });
-  dedicatedWordDirPickBtn?.addEventListener("click", () => {
-    if (!dedicatedPromptKind) {
-      return;
-    }
-    void pickWordDirectoryForKey(dedicatedPromptKind);
-  });
 }
 
 function setupDedicatedWorkspaceTabs() {
@@ -5004,33 +5251,7 @@ async function openEditCustomPrompt(kind) {
     toast("Prompt not found.", "error");
     return;
   }
-  editPromptSettingsKind = kind;
-  const promptPath = getPromptPathForKind(kind);
-  const r = await tryReadPromptFileAtPath(promptPath);
-  if (r) {
-    customTemplateStrById[kind] = r.content;
-    applyExternalEditor(r.path, r.fileUrl, r.content, { preserveSettingsKind: true });
-    editPanelTitle.textContent = getPromptUserName(kind);
-    editPanelTitle.title = fileNameFromPath(r.path);
-    setEditFileNavActiveCustom(kind);
-    loadEditPromptSettings();
-    return;
-  }
-  const fallback = customTemplateStrById[kind] || "";
-  applyExternalEditor("", "", fallback, { preserveSettingsKind: true });
-  editPanelTitle.textContent = getPromptUserName(kind);
-  editPanelTitle.title = promptPath
-    ? `${fileNameFromPath(promptPath)} (not found)`
-    : "No prompt file — use folder button to choose";
-  setEditFileNavActiveCustom(kind);
-  loadEditPromptSettings();
-  toast(
-    promptPath
-      ? "Prompt file not found. Use the folder button next to Prompt file to choose a .txt file."
-      : "No prompt file set. Use the folder button next to Prompt file to choose a .txt file.",
-    "error",
-    6500,
-  );
+  await loadPromptIntoEditor(kind);
 }
 
 /** @param {string} kind */
@@ -5043,16 +5264,17 @@ async function loadCustomPromptTemplate(id) {
   if (!entry) {
     return "";
   }
-  if (customTemplateStrById[id]) {
-    return customTemplateStrById[id];
-  }
   try {
-    const r = await window.promptApi.readPromptFilePath(getPromptPathForKind(id));
-    customTemplateStrById[id] = r.content;
-    return r.content;
+    const r = await tryReadPromptFileAtPath(getPromptPathForKind(id));
+    if (isPromptReadSuccess(r)) {
+      customTemplateStrById[id] = r.content;
+      return r.content;
+    }
+    delete customTemplateStrById[id];
   } catch {
-    return "";
+    delete customTemplateStrById[id];
   }
+  return "";
 }
 
 async function loadAllCustomPromptTemplates() {
@@ -5088,7 +5310,8 @@ function renderEditPromptNav() {
       btn.classList.add("edit-file-active");
     }
     btn.dataset.edit = p.id;
-    btn.innerHTML = `<span class="edit-file-label">${escapeHtml(p.label)}</span>`;
+    const hotkey = getPromptPopupHotkey(p.id);
+    btn.innerHTML = `${userAvatarHtml(p.label, true)}<span class="edit-file-btn-text"><span class="edit-file-label">${escapeHtml(p.label)}</span>${hotkey ? `<span class="edit-file-hotkey">${escapeHtml(hotkey)}</span>` : ""}</span>`;
     btn.title = "Edit prompt and settings";
     nav.insertBefore(btn, addBtn);
   }
@@ -5327,8 +5550,12 @@ editFileLoadBtn?.addEventListener("click", async () => {
     return;
   }
   try {
-    const r = await window.promptApi.readPromptFilePath(raw);
-    applyExternalEditor(r.path, r.fileUrl, r.content);
+    const r = await tryReadPromptFileAtPath(raw);
+    if (!isPromptReadSuccess(r)) {
+      toast("Load failed — file not found or unreadable.", "error");
+      return;
+    }
+    applyExternalEditor(r.path, r.fileUrl || "", r.content);
     toast("File loaded.");
   } catch (_e) {
     toast("Load failed — check path or URL.", "error");
@@ -5374,40 +5601,40 @@ editSaveBtn.addEventListener("click", async () => {
 });
 
 editReloadBtn.addEventListener("click", async () => {
-  if (editMode === "external") {
-    const raw = externalAbsPath || editFileUrlInput?.value?.trim();
-    if (!raw) {
-      toast("No file to reload.", "error");
-      return;
+  const kind = getEditPromptSettingsKind();
+  if (kind) {
+    const ok = await loadPromptIntoEditor(kind);
+    if (ok) {
+      toast("Reloaded from disk.");
     }
+    return;
+  }
+  const raw = externalAbsPath || editFileUrlInput?.value?.trim();
+  if (editMode === "external" && raw) {
     try {
-      const r = await window.promptApi.readPromptFilePath(raw);
-      editTemplate.value = r.content;
+      const r = await tryReadPromptFileAtPath(raw);
+      if (!isPromptReadSuccess(r)) {
+        toast("Reload failed — file not found or unreadable.", "error");
+        return;
+      }
+      setPromptEditorContent(r.content);
       externalAbsPath = r.path;
-      const matchedKind = resolveEditPromptKindForPath(r.path);
-      if (matchedKind) {
-        editPromptSettingsKind = matchedKind;
-        setEditFileNavActive(matchedKind);
-        if (editPanelTitle) {
-          editPanelTitle.textContent = getPromptUserName(matchedKind);
-          editPanelTitle.title = fileNameFromPath(r.path);
-        }
-        loadEditPromptSettings();
-      }
-      if (editFileUrlInput) {
-        editFileUrlInput.value = r.fileUrl;
-      }
+      applyExternalEditor(r.path, r.fileUrl || "", r.content);
       toast("Reloaded from disk.");
     } catch (_e) {
       toast("Reload failed.", "error");
     }
     return;
   }
+  if (!isBuiltinPromptKind(editSelection)) {
+    toast("No file to reload.", "error");
+    return;
+  }
   const id = getIdForEdit(editSelection);
   try {
     const text = await window.promptApi.readPrompt(id);
     setStrForEdit(editSelection, text);
-    editTemplate.value = text;
+    setPromptEditorContent(text);
     toast(`Reloaded: ${EDIT_LABELS[editSelection]}`);
   } catch (_e) {
     toast("Reload failed.", "error");
@@ -5573,7 +5800,7 @@ function applyDedicatedPromptWindowLayout(kind) {
 }
 
 /** @param {string} kind */
-function finishDedicatedPromptWindowSetup(kind) {
+async function finishDedicatedPromptWindowSetup(kind) {
   if (!isPromptKindAvailable(kind)) {
     toast("That user was removed from Resume Builder.", "error", 4500);
     return;
@@ -5581,7 +5808,12 @@ function finishDedicatedPromptWindowSetup(kind) {
   if (!applyDedicatedPromptWindowLayout(kind)) {
     return;
   }
-  applyPreviewForPromptKind(kind, { showToast: false });
+  if (isCustomPromptKind(kind)) {
+    await loadCustomPromptTemplate(kind);
+  } else if (isBuiltinPromptKind(kind)) {
+    await reloadPromptTemplateForKind(kind, { silent: true });
+  }
+  await refreshDedicatedPromptTabPreview();
   updateGptResultReadyUi();
 }
 
@@ -5651,6 +5883,7 @@ async function init() {
   }
   try {
     await removeDefaultSampleUsers();
+    mountMainEditLayout();
     syncAllBuildInputShellStates();
     setupChatgptShowPanesHandlers();
     setupMainChatgptPanesHost();
@@ -5661,6 +5894,7 @@ async function init() {
     syncMainWindowChatgptPanes();
     renderChatgptShowPanesBar();
     refreshPromptDisplayNamesAcrossUi();
+    void syncGlobalResumeSaveRootDisplays();
     void syncPromptPopupHotkeysToMain();
     if (!dedicatedPromptKind) {
       loadMainCompanyName();
@@ -5731,8 +5965,10 @@ reloadBuildBtn?.addEventListener("click", async () => {
 
 /**
  * @param {string} kind
+ * @param {{ originOnly?: boolean }} [opts]
  */
-function previewContentForPrompt(kind) {
+function previewContentForPrompt(kind, opts = {}) {
+  const originOnly = opts.originOnly === true;
   if (!jdInput) {
     return { ok: false, message: "Build inputs are not available." };
   }
@@ -5744,7 +5980,7 @@ function previewContentForPrompt(kind) {
     if (!tplRaw.trim()) {
       return { ok: false, message: "Olu prompt template is empty." };
     }
-    if (!jdFilled) {
+    if (originOnly || !jdFilled) {
       return {
         ok: true,
         text: tplRaw,
@@ -5763,7 +5999,7 @@ function previewContentForPrompt(kind) {
     if (!tplRaw.trim()) {
       return { ok: false, message: "Justin prompt template is empty." };
     }
-    if (!jdFilled) {
+    if (originOnly || !jdFilled) {
       return {
         ok: true,
         text: tplRaw,
@@ -5786,7 +6022,7 @@ function previewContentForPrompt(kind) {
     if (!tplRaw.trim()) {
       return { ok: false, message: `${entry.label} prompt file is empty or missing.` };
     }
-    if (!jdFilled) {
+    if (originOnly || !jdFilled) {
       return {
         ok: true,
         text: tplRaw,
@@ -5804,12 +6040,26 @@ function previewContentForPrompt(kind) {
 }
 
 function getSelectedPromptKind() {
+  const activeEdit = document.querySelector(
+    ".edit-nav .edit-file-btn.edit-file-active[data-edit]",
+  );
+  const editKind = activeEdit?.getAttribute("data-edit") ?? null;
+  if (isBuiltinPromptKind(editKind) || isCustomPromptKind(editKind)) {
+    return editKind;
+  }
   const card = document.querySelector(".prompt-card.is-highlighted");
   const k = card?.getAttribute("data-prompt") ?? null;
   if (isBuiltinPromptKind(k) || isCustomPromptKind(k)) {
     return k;
   }
   return null;
+}
+
+/** @param {string} key */
+function syncPromptCardHighlightFromKind(key) {
+  document.querySelectorAll(".prompt-card[data-prompt]").forEach((card) => {
+    card.classList.toggle("is-highlighted", card.getAttribute("data-prompt") === key);
+  });
 }
 
 /**
@@ -5913,10 +6163,19 @@ function mountDedicatedPromptDirsPanelIn(parent) {
   mountDedicatedJdDownloadStatusHostIn(parent);
 }
 
-function refreshDedicatedPromptTabPreview() {
+async function refreshDedicatedPromptTabPreview() {
   const kind = dedicatedPromptKind;
   if (!kind) {
     return;
+  }
+  if (isCustomPromptKind(kind) && !String(customTemplateStrById[kind] || "").trim()) {
+    await loadCustomPromptTemplate(kind);
+  } else if (isBuiltinPromptKind(kind)) {
+    const tpl =
+      kind === "justin" ? justinTemplateStr : otherTemplateStr;
+    if (!String(tpl || "").trim()) {
+      await reloadPromptTemplateForKind(kind, { silent: true });
+    }
   }
   applyPreviewForPromptKind(kind, { showToast: false });
 }
@@ -6077,6 +6336,16 @@ function downloadKeyForContext() {
 
 function mountDedicatedPromptTabPanels() {
   parkDedicatedBrowserOnlyPanels();
+  const legacy = document.getElementById("buildLegacyPanel");
+  if (legacy instanceof HTMLElement) {
+    legacy.hidden = false;
+    legacy.removeAttribute("aria-hidden");
+  }
+  const editSlot = document.getElementById("editLayoutSlot");
+  if (editSlot instanceof HTMLElement) {
+    editSlot.hidden = true;
+    editSlot.setAttribute("aria-hidden", "true");
+  }
   const column = getDedicatedBuildPreviewColumn();
   const block = getDedicatedBuildPreviewBlock();
   if (!column || !block) {
@@ -6085,8 +6354,12 @@ function mountDedicatedPromptTabPanels() {
   if (block.parentElement !== column) {
     column.appendChild(block);
   }
+  const heading = block.querySelector(".preview-heading");
+  if (heading instanceof HTMLElement) {
+    heading.textContent = "Prompt content";
+  }
   parkDedicatedPromptDirsPanel();
-  refreshDedicatedPromptTabPreview();
+  void refreshDedicatedPromptTabPreview();
   applyDedicatedDownloadDirVisibility();
   ensureDedicatedJdToolbar();
 }
@@ -6210,12 +6483,14 @@ function applyPreviewForPromptKind(kind, opts = {}) {
   if (!previewOutput || !previewMeta) {
     return;
   }
-  const result = previewContentForPrompt(kind);
+  const originOnly =
+    !!dedicatedPromptKind && dedicatedActiveWorkspacePage === "prompt";
+  const result = previewContentForPrompt(kind, { originOnly });
   if (!result.ok) {
     if (showToast) {
       toast(result.message, "error");
     }
-    previewOutput.value = "";
+    previewOutput.value = dedicatedPromptKind ? String(result.message || "") : "";
     previewMeta.textContent = "";
     updatePreviewCopyUi();
     return;
@@ -6545,97 +6820,326 @@ const CHATGPT_WAIT_UPLOAD_AND_ENTER_SCRIPT = `(async function () {
 
   el = findComposer() || el;
   el.focus();
-  fireEnter(el);
-  return "ok";
+  await sleep(120);
+
+  function findSendButton() {
+    var sels = [
+      'button[data-testid="send-button"]',
+      'button[data-testid*="send-button"]',
+      'button[aria-label="Send prompt"]',
+      'button[aria-label="Send message"]',
+      'button[aria-label*="Send"]'
+    ];
+    for (var si = 0; si < sels.length; si++) {
+      var hits = document.querySelectorAll(sels[si]);
+      for (var h = 0; h < hits.length; h++) {
+        if (hits[h].offsetParent !== null && !hits[h].disabled) return hits[h];
+      }
+    }
+    return null;
+  }
+  var sendBtn = null;
+  var sendDeadline = Date.now() + 8000;
+  while (Date.now() < sendDeadline) {
+    sendBtn = findSendButton();
+    if (sendBtn) break;
+    await sleep(150);
+  }
+  if (sendBtn) {
+    var rc = sendBtn.getBoundingClientRect();
+    return JSON.stringify({ x: Math.round(rc.left + rc.width / 2), y: Math.round(rc.top + rc.height / 2) });
+  }
+  return "no-send-button";
 })()`;
 
-/** Last assistant message plain text (trimmed). */
-const CHATGPT_LAST_ASSISTANT_TEXT_SCRIPT = `(function () {
-  var els = document.querySelectorAll('[data-message-author-role="assistant"]');
-  if (!els.length) {
-    return "";
-  }
-  var last = els[els.length - 1];
-  var md =
-    last.querySelector(".markdown, .prose, [class*='markdown'], [data-message-id] .markdown");
-  var root = md || last;
-  return String(root.innerText || "")
-    .replace(/\\r/g, "")
-    .trim();
+/** True once ChatGPT has accepted the prompt (stop button shown, or composer emptied). */
+const CHATGPT_SUBMITTED_SCRIPT = `(function () {
+  if (document.querySelector('[data-testid="stop-button"], button[aria-label*="Stop"]')) return true;
+  var c = document.querySelector("#prompt-textarea");
+  var txt = c ? String(c.value !== undefined && c.tagName === "TEXTAREA" ? c.value : c.innerText || "") : "";
+  return txt.trim().length < 20;
 })()`;
+
+/** Submit with trusted input events (DOM .click()/synthetic Enter are ignored by ChatGPT). */
+async function submitChatgptComposerTrusted(wv) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const submitted = async () => {
+    for (let i = 0; i < 10; i += 1) {
+      await sleep(300);
+      try {
+        if (await wv.executeJavaScript(CHATGPT_SUBMITTED_SCRIPT, true)) return true;
+      } catch (_e) {
+        /* retry */
+      }
+    }
+    return false;
+  };
+  let pos = null;
+  try {
+    const raw = String(await wv.executeJavaScript(CHATGPT_WAIT_UPLOAD_AND_ENTER_SCRIPT, true));
+    pos = JSON.parse(raw);
+  } catch (_e) {
+    pos = null;
+  }
+  if (typeof wv.sendInputEvent !== "function") return false;
+  try {
+    wv.focus();
+  } catch (_e) {
+    /* ignore */
+  }
+  if (pos && Number.isFinite(pos.x)) {
+    const base = { x: pos.x, y: pos.y, button: "left", clickCount: 1 };
+    try {
+      wv.sendInputEvent({ type: "mouseMove", x: pos.x, y: pos.y });
+      wv.sendInputEvent({ type: "mouseDown", ...base });
+      await sleep(60);
+      wv.sendInputEvent({ type: "mouseUp", ...base });
+    } catch (_e) {
+      /* fall through to Enter */
+    }
+    if (await submitted()) return true;
+  }
+  try {
+    wv.sendInputEvent({ type: "keyDown", keyCode: "Enter" });
+    wv.sendInputEvent({ type: "char", keyCode: "\r" });
+    wv.sendInputEvent({ type: "keyUp", keyCode: "Enter" });
+  } catch (_e) {
+    return false;
+  }
+  return submitted();
+}
+
+/* ------------------------------------------------------------------------
+ * GPT reply reader (send → wait → JSON → Word).
+ * Primary: ChatGPT's own conversation API, called from inside the logged-in page.
+ *          message.status === "finished_successfully" is the definitive "done" signal.
+ * Fallback: scan the page text for a complete resume JSON object that stops changing.
+ * No dependency on ChatGPT's DOM class names / data attributes.
+ * ---------------------------------------------------------------------- */
+
+/** Append a line to <userData>/gpt-debug.log (send → reply → Word build trace). */
+function gptDbg(msg) {
+  try {
+    void window.promptApi?.gptDebugLog?.(msg);
+  } catch (_e) {
+    /* ignore */
+  }
+}
 
 /**
- * @param {string} escapedPrev JSON.stringify(previous snapshot)
+ * In-page script. Returns JSON:
+ * { url, api: { status, endTurn, text } | null, apiError, stop, bodyText }
+ * @param {number} sinceSec only consider assistant messages created at/after this unix time (0 = any)
  */
-function buildPollAssistantStateScript(escapedPrev) {
-  return `(function () {
-    var prev = ${escapedPrev};
-    function lastText() {
-      var els = document.querySelectorAll('[data-message-author-role="assistant"]');
-      if (!els.length) {
-        return "";
+function buildReadGptReplyScript(sinceSec) {
+  return `(async function (sinceSec) {
+  var out = { url: location.href, api: null, apiError: "", stop: false, bodyText: "" };
+  try {
+    var parts = location.pathname.split("/");
+    var ci = parts.indexOf("c");
+    var convId = ci >= 0 ? parts[ci + 1] || "" : "";
+    if (!convId) {
+      out.apiError = "no conversation id in URL";
+    } else {
+      if (!window.__pbTok || Date.now() - (window.__pbTokAt || 0) > 600000) {
+        var sres = await fetch("/api/auth/session", { credentials: "include" });
+        var sess = sres.ok ? await sres.json() : null;
+        window.__pbTok = (sess && sess.accessToken) || "";
+        window.__pbTokAt = Date.now();
       }
-      var last = els[els.length - 1];
-      var md =
-        last.querySelector(".markdown, .prose, [class*='markdown'], [data-message-id] .markdown");
-      var root = md || last;
-      return String(root.innerText || "")
-        .replace(/\\r/g, "")
-        .trim();
-    }
-    function streaming() {
-      if (document.querySelector('[data-testid="stop-button"]')) {
-        return true;
-      }
-      if (document.querySelector("button[data-testid*='stop']")) {
-        return true;
-      }
-      var btns = document.querySelectorAll("button");
-      for (var i = 0; i < btns.length; i++) {
-        var al = (btns[i].getAttribute("aria-label") || "").toLowerCase();
-        if (al.indexOf("stop") >= 0 && (al.indexOf("generat") >= 0 || al.indexOf("stream") >= 0)) {
-          return true;
+      var headers = window.__pbTok ? { Authorization: "Bearer " + window.__pbTok } : {};
+      var res = await fetch("/backend-api/conversation/" + convId, { credentials: "include", headers: headers });
+      if (!res.ok) {
+        out.apiError = "conversation http " + res.status;
+        if (res.status === 401) window.__pbTok = "";
+      } else {
+        var conv = await res.json();
+        var map = (conv && conv.mapping) || {};
+        var best = null;
+        for (var k in map) {
+          var m = map[k] && map[k].message;
+          if (!m || !m.author || m.author.role !== "assistant") continue;
+          if (m.recipient && m.recipient !== "all") continue;
+          var c = m.content || {};
+          if (c.content_type && c.content_type !== "text") continue;
+          var ct = m.create_time || 0;
+          if (ct < sinceSec) continue;
+          if (!best || ct >= (best.create_time || 0)) best = m;
+        }
+        if (best) {
+          var bc = best.content || {};
+          var txt = Array.isArray(bc.parts)
+            ? bc.parts.filter(function (p) { return typeof p === "string"; }).join("")
+            : String(bc.text || "");
+          out.api = { status: String(best.status || ""), endTurn: best.end_turn, text: txt };
+        } else {
+          out.api = { status: "none", endTurn: null, text: "" };
         }
       }
-      if (document.querySelector('[class*="result-streaming"]')) {
-        return true;
-      }
-      return false;
     }
-    var text = lastText();
-    return JSON.stringify({
-      text: text,
-      streaming: streaming(),
-      differs: text !== prev,
-    });
-  })()`;
+  } catch (e) {
+    out.apiError = String((e && e.message) || e);
+  }
+  try {
+    if (document.querySelector('[data-testid="stop-button"]')) out.stop = true;
+    var btns = document.querySelectorAll("button");
+    for (var i = 0; i < btns.length && !out.stop; i++) {
+      var al = (btns[i].getAttribute("aria-label") || "").toLowerCase();
+      if (al.indexOf("stop") >= 0 && al.indexOf("dictat") < 0 && al.indexOf("voice") < 0) out.stop = true;
+    }
+    out.bodyText = String((document.querySelector("main") || document.body).innerText || "");
+  } catch (e2) {
+    /* ignore */
+  }
+  return JSON.stringify(out);
+})(${Number(sinceSec) || 0})`;
+}
+
+/**
+ * Last complete resume JSON object in `text` (has non-empty work_experience), or null.
+ * Scans balanced {...} blocks, string/escape aware, so surrounding prose is ignored.
+ * @param {string} text
+ * @returns {Record<string, unknown> | null}
+ */
+function extractResumeJsonFromText(text) {
+  const s = String(text || "");
+  let found = null;
+  let depth = 0;
+  let start = -1;
+  let inStr = false;
+  let esc = false;
+  for (let i = 0; i < s.length; i += 1) {
+    const ch = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') {
+      if (depth > 0) inStr = true;
+    } else if (ch === "{") {
+      if (depth === 0) start = i;
+      depth += 1;
+    } else if (ch === "}" && depth > 0) {
+      depth -= 1;
+      if (depth === 0 && start >= 0) {
+        try {
+          const o = JSON.parse(s.slice(start, i + 1));
+          const wx = o && (o.work_experience || o.work_xperience);
+          if (o && typeof o === "object" && !Array.isArray(o) && Array.isArray(wx) && wx.length > 0) {
+            found = o;
+          }
+        } catch (_e) {
+          /* not JSON — keep scanning */
+        }
+        start = -1;
+      }
+    }
+  }
+  return found;
 }
 
 /**
  * @param {any} wv
+ * @param {number} sinceSec
+ * @returns {Promise<{ url?: string, api: { status: string, endTurn: any, text: string } | null, apiError: string, stop: boolean, bodyText: string }>}
+ */
+async function readGptReply(wv, sinceSec) {
+  const empty = { api: null, apiError: "", stop: false, bodyText: "" };
+  if (!wv || typeof wv.executeJavaScript !== "function") {
+    return { ...empty, apiError: "webview unavailable" };
+  }
+  try {
+    const raw = await wv.executeJavaScript(buildReadGptReplyScript(sinceSec), true);
+    return { ...empty, ...JSON.parse(String(raw || "{}")) };
+  } catch (e) {
+    return { ...empty, apiError: `executeJavaScript: ${e?.message || e}` };
+  }
+}
+
+/**
+ * Wait until ChatGPT finishes, then return the resume JSON.
+ * @param {any} wv
+ * @param {{ sinceSec: number, baselineJson: string, timeoutMs: number }} opts
+ * @returns {Promise<{ ok: true, json: Record<string, unknown> } | { ok: false, error: string }>}
+ */
+async function waitForGptResumeJson(wv, { sinceSec, baselineJson, timeoutMs }) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const deadline = Date.now() + timeoutMs;
+  let domCandidate = "";
+  let domStable = 0;
+  let iter = 0;
+  gptDbg(`wait start sinceSec=${sinceSec} timeoutMs=${timeoutMs}`);
+  await sleep(1500);
+  while (Date.now() < deadline) {
+    iter += 1;
+    const st = await readGptReply(wv, sinceSec);
+    const api = st.api;
+    if (iter % 5 === 1) {
+      gptDbg(
+        `wait #${iter} url=${st.url || ""} api=${api ? `${api.status}/${api.text.length}` : "null"} apiError=${st.apiError} stop=${st.stop} bodyLen=${st.bodyText.length}`,
+      );
+    }
+
+    /* 1) API: definitive status. */
+    if (api && api.status === "finished_successfully" && api.endTurn !== false) {
+      const json = extractResumeJsonFromText(api.text);
+      if (json) {
+        gptDbg(`wait done via api len=${api.text.length}`);
+        return { ok: true, json };
+      }
+      gptDbg(`api finished but no resume JSON: ${JSON.stringify(api.text.slice(0, 200))}`);
+      return {
+        ok: false,
+        error: "ChatGPT finished, but the reply has no complete resume JSON (with work_experience).",
+      };
+    }
+    const apiStreaming = !!api && api.status === "in_progress";
+
+    /* 2) Page-text fallback: complete JSON, no Stop button, unchanged for 3 polls. */
+    if (!st.stop && !apiStreaming) {
+      const json = extractResumeJsonFromText(st.bodyText);
+      const key = json ? JSON.stringify(json) : "";
+      if (key && key !== baselineJson) {
+        if (key === domCandidate) {
+          domStable += 1;
+        } else {
+          domCandidate = key;
+          domStable = 0;
+        }
+        if (domStable >= 2) {
+          gptDbg(`wait done via page text len=${key.length}`);
+          return { ok: true, json };
+        }
+      } else {
+        domCandidate = "";
+        domStable = 0;
+      }
+    } else {
+      domCandidate = "";
+      domStable = 0;
+    }
+    await sleep(2000);
+  }
+  gptDbg("wait timeout");
+  return { ok: false, error: "Timed out waiting for ChatGPT to finish the resume JSON." };
+}
+
+/**
+ * Used by View / refresh: current reply as text (pretty JSON when found).
+ * @param {any} wv
  * @returns {Promise<{ text: string, streaming: boolean }>}
  */
 async function readChatgptAssistantState(wv) {
-  if (!wv || typeof wv.executeJavaScript !== "function") {
-    return { text: "", streaming: false };
+  const st = await readGptReply(wv, 0);
+  const api = st.api;
+  const streaming = api && !st.apiError ? api.status === "in_progress" : st.stop;
+  const json = extractResumeJsonFromText(api?.text || "") || extractResumeJsonFromText(st.bodyText);
+  if (json) {
+    return { text: JSON.stringify(json, null, 2), streaming };
   }
-  try {
-    const raw = await wv.executeJavaScript(buildPollAssistantStateScript('""'), true);
-    const st = JSON.parse(String(raw || "{}"));
-    return {
-      text: String(st.text ?? "").trim(),
-      streaming: !!st.streaming,
-    };
-  } catch (_e) {
-    try {
-      const text = String(
-        await wv.executeJavaScript(CHATGPT_LAST_ASSISTANT_TEXT_SCRIPT, true),
-      ).trim();
-      return { text, streaming: false };
-    } catch (_e2) {
-      return { text: "", streaming: false };
-    }
-  }
+  return { text: String(api?.text || "").trim(), streaming };
 }
 
 /**
@@ -6811,66 +7315,22 @@ async function downloadGptDocxForPane(pane) {
     api?.checkGptDocxExport &&
     (await api.checkGptDocxExport(stored.text))?.ok;
 
+  gptDbg(`download: storedLen=${stored.text.length} parseable=${!!alreadyParseable}`);
   if (!alreadyParseable) {
     const ok = await ensureParseableGptResultForPane(pane);
+    gptDbg(`download: ensureParseable=${ok}`);
     if (!ok) {
       return;
     }
   }
 
+  gptDbg("download: building Word from JSON + skeleton");
   await downloadGptDocxForProfile(ctx.profile, {
     useDefaultDirectory: true,
     downloadKey,
     browserTabId: ctx.browserTabId,
     paneEl: pane,
   });
-}
-
-/**
- * @param {any} wv
- * @param {string} previousText
- * @param {number} timeoutMs
- */
-async function pollGptAssistantReply(wv, previousText, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  let stable = "";
-  let stableCount = 0;
-  const escapedPrev = JSON.stringify(previousText ?? "");
-  while (Date.now() < deadline) {
-    let raw = "";
-    try {
-      raw = await wv.executeJavaScript(buildPollAssistantStateScript(escapedPrev), true);
-    } catch {
-      await new Promise((r) => setTimeout(r, 600));
-      continue;
-    }
-    /** @type {{ text?: string; streaming?: boolean; differs?: boolean }} */
-    let st = {};
-    try {
-      st = JSON.parse(raw);
-    } catch {
-      await new Promise((r) => setTimeout(r, 500));
-      continue;
-    }
-    const text = String(st.text ?? "").trim();
-    if (st.differs && text && !st.streaming) {
-      if (text === stable) {
-        stableCount += 1;
-      } else {
-        stable = text;
-        stableCount = 0;
-      }
-      if (stableCount >= 3) {
-        return stable;
-      }
-    }
-    await new Promise((r) => setTimeout(r, 400));
-  }
-  try {
-    return String(await wv.executeJavaScript(CHATGPT_LAST_ASSISTANT_TEXT_SCRIPT, true) || "").trim();
-  } catch {
-    return stable || "";
-  }
 }
 
 function sanitizeDocxNameSegment(s) {
@@ -6939,15 +7399,19 @@ function roleTitleFromResumeJsonText(text) {
   return "";
 }
 
-function suggestGptDocxDefaultStem(replyText, profile = activeGptResumeProfile) {
-  const person = profile === "olu" ? "Oluwaseun Adeniji" : "Justin Mcghee";
-  if (dedicatedPromptKind) {
-    return `${person} - Resume`;
+function suggestGptDocxDefaultStem(
+  replyText,
+  profile = activeGptResumeProfile,
+  companyName = getCompanyFolderForDownload(),
+) {
+  const company = sanitizeDocxNameSegment(companyName);
+  if (company) {
+    return company;
   }
   const reply = String(replyText || "").trim();
   const jsonRole = sanitizeDocxNameSegment(roleTitleFromResumeJsonText(reply));
   if (jsonRole) {
-    return `${person} - ${jsonRole}`;
+    return jsonRole;
   }
   if (reply) {
     const replyLine =
@@ -6968,10 +7432,10 @@ function suggestGptDocxDefaultStem(replyText, profile = activeGptResumeProfile) 
       .find((l) => l.trim())?.trim() || "";
   const jdRole = sanitizeDocxNameSegment(jdLine);
   if (jdRole) {
-    return `${person} - ${jdRole}`;
+    return jdRole;
   }
 
-  return `${person} - Resume`;
+  return "Resume";
 }
 
 /** @param {"olu" | "justin"} profile */
@@ -7261,7 +7725,7 @@ async function downloadGptDocxForProfile(profile, opts = {}) {
   const companyFolder =
     opts.companyFolder !== undefined
       ? String(opts.companyFolder).trim()
-      : getCompanyFolderForDownload();
+      : getCompanyFolderForDownload(browserTabId);
   if (!companyFolder) {
     toast(
       dedicatedPromptKind
@@ -7275,7 +7739,6 @@ async function downloadGptDocxForProfile(profile, opts = {}) {
     opts.downloadKey !== undefined && opts.downloadKey !== null
       ? String(opts.downloadKey)
       : downloadKeyForContext();
-  const userName = getPromptUserName(downloadKey);
   try {
     const kind =
       opts.downloadKey !== undefined && opts.downloadKey !== null
@@ -7288,8 +7751,8 @@ async function downloadGptDocxForProfile(profile, opts = {}) {
       text: stored.text,
       profile,
       downloadKey,
-      userFileName: userName,
-      defaultFileName: suggestGptDocxDefaultStem(stored.text, profile),
+      profileName: getPromptUserName(downloadKey),
+      defaultFileName: suggestGptDocxDefaultStem(stored.text, profile, companyFolder),
       useDefaultDirectory: opts.useDefaultDirectory,
       showSaveDialog: opts.showSaveDialog,
       companyFolder,
@@ -7328,7 +7791,7 @@ async function downloadGptDocxForProfile(profile, opts = {}) {
         folderPath ? 8000 : 5000,
       );
     } else if (r?.needsDirectory) {
-      toast(String(r.error || "Set download folder first."), "error", 5500);
+      toast(String(r.error || "Set global resume download folder in Settings."), "error", 5500);
     } else {
       toast(String(r?.error || "Save failed."), "error");
     }
@@ -7513,7 +7976,11 @@ function setupGptResultModal() {
   });
 }
 
-/** @param {HTMLElement} pane */
+/**
+ * Workflow: paste prompt+JD into ChatGPT → click Send → wait until GPT finishes →
+ * take the resume JSON → build Word from JSON + skeleton.
+ * @param {HTMLElement} pane
+ */
 async function sendPreviewToChatGptForPane(pane) {
   const ctx = getChatgptPaneContextFromPane(pane);
   const kind = ctx.browserTabId ? dedicatedPromptKind : ctx.promptId;
@@ -7528,10 +7995,18 @@ async function sendPreviewToChatGptForPane(pane) {
   }
 
   const text = getFullPromptTextForKind(kind);
+  if (!String(text || "").trim()) {
+    toast("Prompt template is empty or missing.", "error");
+    return;
+  }
   activeGptResumeProfile = ctx.profile;
   const profile = ctx.profile;
   const browserTabId = ctx.browserTabId;
   const wv = ctx.wv;
+  if (!wv || typeof wv.executeJavaScript !== "function") {
+    toast("ChatGPT pane is not available.", "error");
+    return;
+  }
 
   if (browserTabId && dedicatedActiveWorkspacePage !== browserTabId) {
     activateDedicatedBrowserTabById(browserTabId);
@@ -7544,55 +8019,28 @@ async function sendPreviewToChatGptForPane(pane) {
   const browserEntry = browserTabId
     ? dedicatedBrowserTabs.find((t) => t.id === browserTabId)
     : null;
-  const tabLabel = contextLabelForGptUi({
-    promptKind: kind,
-    browserTabId,
-    profile,
-  });
+  const busyOpts = { browserTabId, paneEl: browserEntry?.paneEl ?? null };
+  const tabLabel = contextLabelForGptUi({ promptKind: kind, browserTabId, profile });
 
+  let resumeJson = null;
+  setGptProfileBusy(profile, true, busyOpts);
   try {
-    await navigator.clipboard.writeText(text);
-  } catch (_e) {
-    toast("Could not copy preview to clipboard.", "error");
-    return;
-  }
-
-  /* Let the OS clipboard settle before the webview reads/pastes it. */
-  await new Promise((r) => setTimeout(r, 80));
-  if (!wv || typeof wv.executeJavaScript !== "function") {
-    toast("Preview copied — open ChatGPT and press Ctrl+V, then Enter.", "success");
+    /* 1) Paste. */
     try {
-      wv?.focus?.();
+      await navigator.clipboard.writeText(text);
     } catch (_e) {
-      /* ignore */
+      /* clipboard is only a fallback path */
     }
-    return;
-  }
-
-  setGptProfileBusy(profile, true, {
-    browserTabId,
-    paneEl: browserEntry?.paneEl ?? null,
-  });
-
-  try {
     try {
       wv.focus();
     } catch (_e) {
       /* ignore */
     }
-
     let injected = "error";
     try {
       injected = await injectTextIntoChatGptWebview(wv, text);
     } catch (_e) {
       injected = "error";
-    }
-    if (injected !== "ok") {
-      try {
-        injected = await wv.executeJavaScript(CHATGPT_INJECT_FROM_CLIPBOARD_SCRIPT, true);
-      } catch (_e) {
-        injected = "error";
-      }
     }
     if (injected !== "ok") {
       try {
@@ -7604,67 +8052,47 @@ async function sendPreviewToChatGptForPane(pane) {
         injected = "error";
       }
     }
-
     if (injected !== "ok") {
-      toast(
-        "Could not fill the ChatGPT message box (UI may have changed). Preview is copied — paste with Ctrl+V.",
-        "error",
-      );
+      gptDbg(`paste failed: ${injected}`);
+      toast("Could not paste into the ChatGPT message box.", "error");
       return;
     }
 
-    let previousSnap = "";
-    try {
-      previousSnap = String(
-        await wv.executeJavaScript(CHATGPT_LAST_ASSISTANT_TEXT_SCRIPT, true),
-      );
-    } catch (_e) {
-      previousSnap = "";
+    /* Baseline: any resume JSON already on the page must not be mistaken for the new reply. */
+    const before = await readGptReply(wv, 0);
+    const baselineObj = extractResumeJsonFromText(before.bodyText);
+    const baselineJson = baselineObj ? JSON.stringify(baselineObj) : "";
+    const sinceSec = Math.floor(Date.now() / 1000) - 60; /* tolerate clock skew */
+
+    /* 2) Send. */
+    await new Promise((r) => setTimeout(r, 150));
+    const sent = await submitChatgptComposerTrusted(wv);
+    gptDbg(`send: injected=${injected} sent=${sent}`);
+    if (!sent) {
+      toast("Could not click ChatGPT Send automatically.", "error");
+      return;
     }
-
-    await new Promise((r) => setTimeout(r, 120));
-
-    try {
-      await wv.executeJavaScript(CHATGPT_WAIT_UPLOAD_AND_ENTER_SCRIPT, true);
-    } catch (_e) {
-      /* ignore */
-    }
-
     hideGptResultModal();
-    toast(`Waiting for ${tabLabel} ChatGPT to finish…`, "success");
+    toast(`Sent to ${tabLabel} ChatGPT — waiting for it to finish…`, "success");
 
-    let reply = "";
-    try {
-      reply = await pollGptAssistantReply(wv, previousSnap.trim(), 180000);
-    } catch (_e) {
-      reply = "";
+    /* 3) Wait for GPT to finish and take the JSON. */
+    const res = await waitForGptResumeJson(wv, { sinceSec, baselineJson, timeoutMs: 600000 });
+    if (!res.ok) {
+      storeGptResult(profile, res.error, true, { browserTabId });
+      toast(`${tabLabel}: ${res.error}`, "error", 8000);
+      return;
     }
-
-    const trimmed = reply.trim();
-    if (!trimmed) {
-      const errMsg =
-        "No assistant reply was detected before timeout. Copy from ChatGPT if the answer is visible there.";
-      storeGptResult(profile, errMsg, true, { browserTabId });
-      toast(`${tabLabel}: ${errMsg}`, "error");
-    } else {
-      storeGptResult(profile, trimmed, false, { browserTabId });
-      toast(
-        `${tabLabel} finished — use the eye or download icons on the browser toolbar.`,
-        "success",
-        6500,
-      );
-    }
+    resumeJson = res.json;
+    storeGptResult(profile, JSON.stringify(resumeJson, null, 2), false, { browserTabId });
   } finally {
-    setGptProfileBusy(profile, false, {
-      browserTabId,
-      paneEl: browserEntry?.paneEl ?? null,
-    });
-    try {
-      wv.focus();
-    } catch (_e) {
-      /* ignore */
-    }
+    setGptProfileBusy(profile, false, busyOpts);
   }
+
+  /* 4) Build Word from JSON + skeleton. */
+  toast(`${tabLabel} finished — building Word resume…`, "success", 4500);
+  const downloadPane = browserEntry?.paneEl ?? pane;
+  gptDbg("build: JSON ready, building Word from skeleton");
+  await downloadGptDocxForPane(downloadPane);
 }
 
 /**
@@ -7706,31 +8134,22 @@ function setupInputGptHandler() {
  * @param {string} [prefixOverride]
  */
 /**
- * @param {string} downloadKey
  * @returns {Promise<boolean>}
  */
-async function pickWordDirectoryForKey(downloadKey) {
-  const key = String(downloadKey || "").trim();
-  if (!key) {
-    return false;
-  }
+async function pickGlobalResumeSaveRoot() {
   const api = window.promptApi;
   if (!api || typeof api.pickDownloadDirectory !== "function") {
     toast("Folder picker is not available.", "error");
     return false;
   }
   try {
-    const r = await api.pickDownloadDirectory(key);
+    const r = await api.pickDownloadDirectory("global");
     if (r?.canceled) {
       return false;
     }
     if (r?.ok && r.directory) {
-      await refreshPromptWordDirectoryDisplays(key);
-      toast(
-        `${getPromptUserName(key)}: Word folder saved (other prompts unchanged).`,
-        "success",
-        5000,
-      );
+      await syncGlobalResumeSaveRootDisplays();
+      toast("Global resume save folder updated.", "success", 4500);
       return true;
     }
     toast(String(r?.error || "Could not set folder."), "error");
@@ -7740,60 +8159,13 @@ async function pickWordDirectoryForKey(downloadKey) {
   return false;
 }
 
-/**
- * @param {HTMLInputElement | null} input
- * @param {string} kind
- */
-async function loadWordDirectoryIntoInput(input, kind) {
-  if (!kind || !input) {
-    return;
-  }
-  const api = window.promptApi;
-  if (!api || typeof api.getDownloadDirectory !== "function") {
-    input.value = "";
-    input.placeholder = "Choose folder for this prompt…";
-    input.title = "";
-    return;
-  }
-  try {
-    const r = await api.getDownloadDirectory(kind);
-    const dir = String(r?.directory || "").trim();
-    input.value = dir;
-    input.placeholder = dir ? "" : "Choose folder for this prompt…";
-    input.title = dir;
-  } catch (_e) {
-    input.value = "";
-    input.title = "";
-  }
-}
-
 /** @param {string} kind */
-async function loadEditPromptWordDirectory(kind) {
-  await loadWordDirectoryIntoInput(editPromptWordDirInput, kind);
-}
-
-/** @param {string} kind */
-async function loadMainPromptWordDirectory(kind) {
-  await loadWordDirectoryIntoInput(mainPromptWordDirInput, kind);
-}
-
-/** @param {string} kind */
-async function loadDedicatedPromptWordDirectory(kind) {
-  await loadWordDirectoryIntoInput(dedicatedWordDirInput, kind);
-}
-
-/** @param {string} kind */
-async function refreshPromptWordDirectoryDisplays(kind) {
-  if (getEditPromptSettingsKind() === kind) {
-    await loadEditPromptWordDirectory(kind);
+async function loadDedicatedPromptStructureDirectory(kind) {
+  await loadMainPromptStructureDirectory(kind);
+  if (dedicatedPromptStructureDisplay) {
+    dedicatedPromptStructureDisplay.value = getPromptStructurePathForKind(kind);
+    dedicatedPromptStructureDisplay.title = dedicatedPromptStructureDisplay.value;
   }
-  const showMainPreview =
-    dedicatedPromptKind === kind ||
-    (!dedicatedPromptKind && getSelectedPromptKind() === kind);
-  if (showMainPreview) {
-    await loadMainPreviewDirectories(kind);
-  }
-  await refreshChatgptPaneWordDirectoriesForKind(kind);
 }
 
 const BROWSER_PANEL_HIDDEN_KEY = "resume-builder.browser-panel-hidden";
@@ -7979,11 +8351,12 @@ function setupPromptSectionHighlights() {
 }
 
 const LEGACY_DEDICATED_HEADER_COLOR_STORAGE = "pb_dedicated_window_header_color";
-const DEFAULT_HEADER_COLOR = "#fae3d4";
+const DEFAULT_HEADER_COLOR = "#fceee3";
+const DEFAULT_MAIN_HEADER_COLOR = "#d1fae5";
 
 /** @type {{ id: string, label: string, hex: string }[]} */
 const HEADER_COLOR_PALETTE = [
-  { id: "peach", label: "Peach", hex: "#fae3d4" },
+  { id: "peach", label: "Peach", hex: "#fceee3" },
   { id: "sky", label: "Sky", hex: "#dbeafe" },
   { id: "mint", label: "Mint", hex: "#d1fae5" },
   { id: "lavender", label: "Lavender", hex: "#ede9fe" },
@@ -8035,7 +8408,7 @@ function getStoredHeaderColor(scope) {
   } catch (_e) {
     /* ignore */
   }
-  return DEFAULT_HEADER_COLOR;
+  return s === "main" ? DEFAULT_MAIN_HEADER_COLOR : DEFAULT_HEADER_COLOR;
 }
 
 /** @param {string} hex @param {number} whiteRatio */
@@ -8064,10 +8437,12 @@ function applyHeaderColorForScope(scope, hex) {
     ) ?? HEADER_COLOR_PALETTE[0];
   if (scope === "main") {
     const titlebarBg =
-      mixHexWithWhite(match.hex, 0.08) ?? "rgba(255, 255, 255, 0.92)";
-    const panelBg = mixHexWithWhite(match.hex, 0.7) ?? "rgba(255, 255, 255, 0.96)";
+      mixHexWithWhite(match.hex, 0.08) ?? "rgba(209, 250, 229, 0.95)";
+    const panelBg = mixHexWithWhite(match.hex, 0.82) ?? "#ffffff";
+    const appBg = mixHexWithWhite(match.hex, 0.92) ?? "#f4f6f9";
     document.body.style.setProperty("--pb-main-titlebar-bg", titlebarBg);
     document.body.style.setProperty("--pb-main-panel-bg", panelBg);
+    document.body.style.setProperty("--pb-app-bg", appBg.replace("0.92)", "1)"));
   } else {
     document.body.style.setProperty("--dedicated-tabstrip-bg", match.hex);
   }
@@ -8161,6 +8536,13 @@ function restoreEditLayoutToEditPage() {
   }
 }
 
+function mountMainEditLayout() {
+  if (dedicatedPromptKind) {
+    return;
+  }
+  restoreEditLayoutToEditPage();
+}
+
 function syncEditTemplateFromEditor() {
   if (editMode === "builtin" && editTemplate) {
     setStrForEdit(editSelection, editTemplate.value);
@@ -8168,14 +8550,7 @@ function syncEditTemplateFromEditor() {
 }
 
 function closeUsersManageModal() {
-  const modal = document.getElementById("usersManageModal");
-  if (!(modal instanceof HTMLElement)) {
-    return;
-  }
-  syncEditTemplateFromEditor();
-  restoreEditLayoutToEditPage();
-  modal.hidden = true;
-  refreshPromptDisplayNamesAcrossUi();
+  /* Main window uses inline edit layout; nothing to close. */
 }
 
 async function loadUsersManageEditorForKind(kind) {
@@ -8211,36 +8586,55 @@ async function openUsersManageModal() {
     toast("Manage users from the main Resume Builder window.", "info", 4500);
     return;
   }
-  const modal = document.getElementById("usersManageModal");
-  const body = document.getElementById("usersManageModalBody");
-  const layout = getEditLayoutElement();
-  if (!(modal instanceof HTMLElement) || !(body instanceof HTMLElement) || !(layout instanceof HTMLElement)) {
-    return;
-  }
+  mountMainEditLayout();
   const kind = resolveUsersManageModalKind();
-  body.appendChild(layout);
-  modal.hidden = false;
-  const dialog = modal.querySelector(".users-manage-dialog");
-  if (dialog instanceof HTMLElement) {
-    dialog.focus();
-  }
   refreshEditUsersNav();
   if (kind) {
     await loadUsersManageEditorForKind(kind);
   } else {
     await openFirstAvailablePromptInEditor();
   }
+  const host = document.getElementById("editLayoutSlot");
+  if (host instanceof HTMLElement) {
+    host.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 }
 
 function setupUsersManageModal() {
   const openBtn = document.getElementById("openUsersManageBtn");
+  const openFromSettingsBtn = document.getElementById("openUsersManageFromSettingsBtn");
+  const addFromBuildBtn = document.getElementById("addUserFromBuildBtn");
+  const editNavAddBtn = document.getElementById("editNavAddUserBtn");
+  const editNavReloadBtn = document.getElementById("editNavReloadBtn");
+  const editUserOpenBtn = document.getElementById("editUserHeaderOpenBtn");
+  const mainSaveRootBrowseBtn = document.getElementById("mainResumeSaveRootBrowseBtn");
+  const editSaveRootBrowseBtn = document.getElementById("editResumeSaveRootBrowseBtn");
   const modal = document.getElementById("usersManageModal");
   const closeBtn = document.getElementById("usersManageModalClose");
-  if (!(openBtn instanceof HTMLButtonElement) || !(modal instanceof HTMLElement)) {
+  if (!(modal instanceof HTMLElement)) {
     return;
   }
-  openBtn.addEventListener("click", () => {
+  const openManage = () => {
     void openUsersManageModal();
+  };
+  openBtn?.addEventListener("click", openManage);
+  openFromSettingsBtn?.addEventListener("click", openManage);
+  addFromBuildBtn?.addEventListener("click", () => openAddPromptModal());
+  editNavAddBtn?.addEventListener("click", () => openAddPromptModal());
+  editNavReloadBtn?.addEventListener("click", () => {
+    void reloadBuildBtn?.click();
+  });
+  editUserOpenBtn?.addEventListener("click", () => {
+    const kind = getEditPromptSettingsKind();
+    if (kind) {
+      void openPromptWindowForKind(kind);
+    }
+  });
+  mainSaveRootBrowseBtn?.addEventListener("click", () => {
+    void pickGlobalResumeSaveRoot();
+  });
+  editSaveRootBrowseBtn?.addEventListener("click", () => {
+    void pickGlobalResumeSaveRoot();
   });
   closeBtn?.addEventListener("click", () => {
     closeUsersManageModal();

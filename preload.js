@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld("pbPaths", {
 });
 
 contextBridge.exposeInMainWorld("promptApi", {
+  gptDebugLog: (msg) => ipcRenderer.invoke("gpt-debug-log", String(msg)),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   readPrompt: (relPath) => ipcRenderer.invoke("read-prompt", relPath),
   savePrompt: (relPath, content) =>
@@ -26,6 +27,8 @@ contextBridge.exposeInMainWorld("promptApi", {
   pickStructureDocx: () => ipcRenderer.invoke("pick-structure-docx"),
   getCustomPrompts: () => ipcRenderer.invoke("get-custom-prompts"),
   saveCustomPrompt: (entry) => ipcRenderer.invoke("save-custom-prompt", entry),
+  updateCustomPromptPath: (entry) =>
+    ipcRenderer.invoke("update-custom-prompt-path", entry),
   deleteCustomPrompt: (id) => ipcRenderer.invoke("delete-custom-prompt", { id }),
   readPromptFilePath: (pathOrFileUrl) =>
     ipcRenderer.invoke("read-prompt-file-path", pathOrFileUrl),
